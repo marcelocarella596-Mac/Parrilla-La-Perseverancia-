@@ -1,5 +1,5 @@
 <!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>COCINA HERNÁN - v3.2 RESALTE COCINA</title>
+<title>COCINA HERNÁN - v3.3 WHATSAPP FIX</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
@@ -23,19 +23,20 @@ header{background:linear-gradient(90deg,#b03a2e,#d35400);padding:10px 14px;borde
 .mesa-card{background:#1b1b1b;border:1px solid #333;border-radius:8px;padding:8px;min-height:130px;cursor:pointer}
 .mesa-card.ocupada{border-color:#00ff66;background:#122a18}.mesa-card.alarm-manos{border-color:#f1c40f;box-shadow:0 0 20px #f1c40f;animation:parp.4s infinite}
 .mesa-card.cobrada{border-color:#f1c40f;background:#1a1a00;opacity:0.7}
+.mesa-card.whatsapp{border-color:#25D366;background:#102a18;box-shadow:0 0 10px #25D366}
 .timer{background:#000;border:1px solid #00ff66;color:#00ff66;text-align:center;padding:3px;border-radius:4px;font-family:monospace;font-size:11px;margin-top:6px}
 .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.88);display:none;justify-content:center;align-items:center;z-index:9999}
 .modal{background:#181818;border:1px solid #444;border-radius:10px;padding:18px;width:95%;max-width:650px;text-align:center}
 .btn-estado{width:100%;padding:12px;margin-bottom:8px;border:none;border-radius:6px;font-weight:bold;cursor:pointer;color:#fff;font-size:12px}
 .chat-box{background:#111;border:1px solid #333;border-radius:6px;height:300px;overflow-y:auto;padding:8px;font-size:11px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px;text-align:left}
 </style></head><body>
-<header><div><b>🔥 LA PERSEVERANCIA</b> <span style="font-size:11px;opacity:.8">| COCINA HERNÁN v3.2 RESALTE</span></div>
-<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-caja" onclick="abrirCaja()">💰 CAJA</button><button class="btn btn-msj" onclick="abrirMensajes()">💬 MENSAJES</button><button class="btn" onclick="abrirResumen()">📋 RESUMEN</button><button class="btn btn-rojo" onclick="abrirAgotar()">🚫 AGOTAR</button><span style="font-size:11px;color:#00ff66;border:1px solid #00ff66;padding:5px 8px;border-radius:5px">• v3.2 MANOS FIX</span></div></header>
-<div class="layout"><div class="panel"><div class="panel-titulo"><span>ÍTEMS COCINA - COCINA RESALTADA / PARRILLA TENUE</span><span id="cant">0</span></div><div id="listaFIFO"></div></div><div class="panel"><div class="panel-titulo"><span>📍 PLANO - comandas_activas</span></div><div id="plano"></div></div></div>
+<header><div><b>🔥 LA PERSEVERANCIA</b> <span style="font-size:11px;opacity:.8">| COCINA HERNÁN v3.3 WHATSAPP FIX</span></div>
+<div style="display:flex;gap:6px;flex-wrap:wrap"><button class="btn btn-caja" onclick="abrirCaja()">💰 CAJA</button><button class="btn btn-msj" onclick="abrirMensajes()">💬 MENSAJES</button><button class="btn" onclick="abrirResumen()">📋 RESUMEN</button><button class="btn btn-rojo" onclick="abrirAgotar()">🚫 AGOTAR</button><span style="font-size:11px;color:#00ff66;border:1px solid #00ff66;padding:5px 8px;border-radius:5px">• v3.3 WHATSAPP</span></div></header>
+<div class="layout"><div class="panel"><div class="panel-titulo"><span>ÍTEMS COCINA - WHATSAPP INCLUIDO</span><span id="cant">0</span></div><div id="listaFIFO"></div></div><div class="panel"><div class="panel-titulo"><span>📍 PLANO - comandas_activas + WHATSAPP</span></div><div id="plano"></div></div></div>
 <div class="modal-overlay" id="modal"><div class="modal" style="max-width:460px"><h3 id="modalTitulo" style="color:#00ff66;margin-bottom:8px"></h3><div id="modalDetalle" style="font-size:11px;text-align:left;background:#111;padding:8px;border-radius:6px;margin-bottom:10px;max-height:50vh;overflow:auto"></div>
 <button class="btn-estado" style="background:#2980b9" onclick="setEstado('RECIBIDO')">📥 RECIBIDO</button>
 <button class="btn-estado" style="background:#d35400" onclick="setEstado('PREPARACION')">🔥 PREPARACIÓN</button>
-<button class="btn-estado" style="background:#27ae60" onclick="marcarTodosEntregados()">🖐️ ENTREGADO A MOZO - APAGAR TITILANTE MARIANA</button>
+<button class="btn-estado" style="background:#27ae60" onclick="marcarTodosEntregados()">🖐️ ENTREGADO A MOZO</button>
 <button class="btn-estado" style="background:#000;border:1px solid #3498db;color:#3498db" onclick="imprimirPendientesModal()">🖨️ IMPRIMIR SOLO COCINA PENDIENTE</button>
 <button class="btn-estado" style="background:#333" onclick="cerrar()">CERRAR (ESC)</button></div></div>
 <div class="modal-overlay" id="modalResumen"><div class="modal" style="max-width:550px;text-align:left"><h3 style="color:#ff9900">📋 RESUMEN</h3><div id="contenidoResumen" style="font-size:12px;background:#111;padding:10px;border-radius:6px;max-height:60vh;overflow-y:auto"></div><button class="btn-estado" style="background:#333;margin-top:10px" onclick="document.getElementById('modalResumen').style.display='none'">CERRAR</button></div></div>
@@ -55,15 +56,30 @@ function getCant(it){return parseInt(it.cantidad||it.qty||1);}
 function getEstadoItem(it){return (it.estadoItem||'PENDIENTE').toUpperCase();}
 const PARRILLA_BASE=['asado','vacio','vacío','bife','entraña','morcilla','chinchulin','chorizo','provoleta','molleja','matambre','bondiola','choripan','morcipan','parrillada','pollo'];
 const AGREGADOS_COCINA=['lechuga','tomate','jamon','jamón','queso','huevo','frita','papas'];
-const COCINA_PURA=['milanesa','suprema','pechuga','tortilla'];
+const COCINA_PURA=['milanesa','suprema','pechuga','tortilla','ravioles','tallarines','albóndigas','albondigas'];
 function descomponerItem(nom){const n=(nom||'').toLowerCase(); if(COCINA_PURA.some(k=>n.includes(k))) return [{texto:nom, estacion:'COCINA'}]; const esParr=PARRILLA_BASE.some(k=>n.includes(k)); const tiene=AGREGADOS_COCINA.some(k=>n.includes(k)); if(esParr&&tiene){const carne=nom.split(/c\/fritas/i)[0].trim(); return [{texto:carne, estacion:'PARRILLA'}, {texto:'FRITAS', estacion:'COCINA', esGuarnicion:true}];} if(esParr) return [{texto:nom, estacion:'PARRILLA'}]; return [{texto:nom, estacion:'COCINA'}];}
 function getTipo(items){let p=false,c=false;(items||[]).forEach(it=>{descomponerItem(getNombre(it)).forEach(s=>{if(s.estacion==='PARRILLA') p=true; else c=true;});}); if(p&&c) return 'MIXTA'; if(p) return 'PARRILLA'; return 'COCINA';}
 
+// LECTURA CON FIX WHATSAPP
 db.ref('comandas_activas').on('value',s=>{
 const data=s.val()||{};const nuevo={};
 Object.entries(data).forEach(([firebaseKey,cmd])=>{
  if(!cmd.items) return;
- const idV=MAPEO[cmd.mesa]||MAPEO[firebaseKey]||cmd.mesa||firebaseKey;
+ let raw = (cmd.mesa||firebaseKey||'') + ' ' + (cmd.canal||'') + ' ' + (cmd.mesaBase||'');
+ let esWhatsApp = raw.toLowerCase().includes('whatsapp');
+ let idV=MAPEO[cmd.mesa]||MAPEO[firebaseKey]||cmd.mesa||firebaseKey;
+
+ if(esWhatsApp){
+   let idW = cmd.mesa || ('WHATSAPP '+ (cmd.cliente||firebaseKey));
+   if(!nuevo[idW]) nuevo[idW]={id:idW,firebaseKey:firebaseKey,mesa:cmd.mesa||firebaseKey,items:[],estado:(cmd.estado||'RECIBIDO').toUpperCase(),estado_cocina:(cmd.estado_cocina||cmd.estado||'RECIBIDO').toUpperCase(),estado_parrilla:(cmd.estado_parrilla||cmd.estado||'RECIBIDO').toUpperCase(),total_cobrado:cmd.total||0,timestamp:cmd.timestamp||Date.now(),timestamp_estado:cmd.timestamp_estado||cmd.timestamp||Date.now(),nroOrden:cmd.id||firebaseKey,cliente:cmd.cliente||'',direccion:cmd.direccion||'', esWhatsApp:true};
+   (cmd.items||[]).forEach(it=>{
+     const nom=getNombre(it);
+     if(!nom||nom.toLowerCase().includes('undefined')) return;
+     nuevo[idW].items.push({n:nom,nombre:nom,cantidad:getCant(it),p:getPrecio(it),estadoItem:it.estadoItem||'PENDIENTE',cat:it.cat||''});
+   });
+   return;
+ }
+
  if(!NOMBRES[idV]) return;
  if(!nuevo[idV]) nuevo[idV]={id:idV,firebaseKey:firebaseKey,mesa:cmd.mesa||firebaseKey,items:[],estado:(cmd.estado||'RECIBIDO').toUpperCase(),estado_cocina:(cmd.estado_cocina||cmd.estado||'RECIBIDO').toUpperCase(),estado_parrilla:(cmd.estado_parrilla||cmd.estado||'RECIBIDO').toUpperCase(),total_cobrado:cmd.total||cmd.total_cobrado||0,timestamp:cmd.timestamp||cmd.id||Date.now(),timestamp_estado:cmd.timestamp_estado||cmd.timestamp||cmd.id||Date.now(),nroOrden:cmd.id||100};
  (cmd.items||[]).forEach(it=>{
@@ -71,10 +87,10 @@ Object.entries(data).forEach(([firebaseKey,cmd])=>{
    if(!nom||nom.toLowerCase().includes('undefined')) return;
    nuevo[idV].items.push({n:nom,nombre:nom,cantidad:getCant(it),p:getPrecio(it),estadoItem:it.estadoItem||'PENDIENTE',cat:it.cat||''});
  });
- nuevo[idV].estado=cmd.estado||nuevo[idV].estado; nuevo[idV].estado_cocina=cmd.estado_cocina||nuevo[idV].estado; nuevo[idV].estado_parrilla=cmd.estado_parrilla||nuevo[idV].estado; nuevo[idV].total_cobrado=cmd.total||nuevo[idV].total_cobrado;
 });
 comandas=nuevo;render();
 });
+
 db.ref('platos_agotados').on('value',s=>{agotadosCache=s.val()||{};});
 db.ref('mensajes_chat').limitToLast(30).on('value',snap=>{
  const box=document.getElementById('chatMensajes'); if(!box) return; box.innerHTML=''; const data=snap.val(); if(!data) return;
@@ -88,7 +104,7 @@ function render(){
  ids.sort((a,b)=>comandas[a].timestamp-comandas[b].timestamp).forEach(id=>{
   const cmd=comandas[id];const tipo=getTipo(cmd.items);
   const tieneCocina=cmd.items.some(i=>descomponerItem(getNombre(i)).some(s=>s.estacion==='COCINA'));
-  if(!tieneCocina) return;
+  if(!tieneCocina &&!cmd.esWhatsApp) return;
   const pendientesCocina=cmd.items.filter(i=>getEstadoItem(i)!=='MANOS_EN_MESA' && descomponerItem(getNombre(i)).some(s=>s.estacion==='COCINA'));
   const tieneEntregado=cmd.items.some(i=>getEstadoItem(i)==='ENTREGADO_SECTOR' && descomponerItem(getNombre(i)).some(s=>s.estacion==='COCINA'));
   if(pendientesCocina.length===0 &&!tieneEntregado) return;
@@ -109,7 +125,7 @@ function render(){
     });
   });
   const div=document.createElement('div');div.className=`ticket ${cmd.estado_cocina||cmd.estado} ${alarmClass}`;div.onclick=()=>abrir(id);
-  div.innerHTML=`<div style="display:flex;justify-content:space-between"><span><span style="background:#000;color:#f1c40f;border:1px solid #f1c40f;padding:1px 4px;border-radius:4px;font-family:monospace">#${nro}</span> ${id}</span><span class="badge-tipo" style="color:${tipo==='MIXTA'?'#f1c40f':'#00ff66'}">${tipo}</span></div><div style="font-size:10px;color:#aaa;margin:4px 0">${cmd.estado_cocina||cmd.estado} - ${mins.toFixed(1)}min</div>${itemsHTML}`;fifo.appendChild(div);
+  div.innerHTML=`<div style="display:flex;justify-content:space-between"><span><span style="background:#000;color:${cmd.esWhatsApp?'#25D366':'#f1c40f'};border:1px solid ${cmd.esWhatsApp?'#25D366':'#f1c40f'};padding:1px 4px;border-radius:4px;font-family:monospace">#${nro} ${cmd.esWhatsApp?'WHATSAPP':''}</span> ${id} ${cmd.cliente?'- '+cmd.cliente:''}</span><span class="badge-tipo" style="color:${tipo==='MIXTA'?'#f1c40f':'#00ff66'}">${tipo}</span></div><div style="font-size:10px;color:#aaa;margin:4px 0">${cmd.estado_cocina||cmd.estado} - ${mins.toFixed(1)}min ${cmd.direccion?'- '+cmd.direccion:''}</div>${itemsHTML}`;fifo.appendChild(div);
  });
  const plano=document.getElementById('plano');plano.innerHTML='<div class="plano-grid" id="g"></div>';const g=document.getElementById('g');
  Object.keys(NOMBRES).forEach(id=>{
@@ -119,8 +135,19 @@ function render(){
   let lista='';cmd.items.forEach(it=>{if(getEstadoItem(it)==='MANOS_EN_MESA') return; descomponerItem(getNombre(it)).forEach(s=>{if(s.estacion==='COCINA'){lista+=`<li class="item-cocina-resaltado" style="list-style:none">• ${s.texto} x${it.cantidad||1}</li>`;}else{lista+=`<li class="item-parrilla-tenue" style="list-style:none">• ${s.texto} (parrilla)</li>`;}});});
   card.innerHTML=`<div><span style="color:#f1c40f">#${String(cmd.nroOrden).slice(-3)}</span> ${NOMBRES[id]}</div><ul style="margin:6px 0">${lista}</ul>`;g.appendChild(card);
  });
+ // MOSTRAR WHATSAPP EN PLANO COMO CARDS VERDES
+ Object.keys(comandas).forEach(id=>{
+   const cmd=comandas[id];
+   if(!cmd.esWhatsApp) return;
+   const mins=(Date.now()-(cmd.timestamp_estado||cmd.timestamp))/1000/60;
+   const card=document.createElement('div');card.className=`mesa-card whatsapp ocupada`;
+   card.onclick=()=>abrir(id);
+   let lista='';cmd.items.forEach(it=>{lista+=`<li class="item-cocina-resaltado" style="list-style:none">• ${it.n} x${it.cantidad}</li>`;});
+   card.innerHTML=`<div style="color:#25D366;font-weight:bold">📱 ${id}</div><div style="font-size:10px">${cmd.cliente||''}<br>${cmd.direccion||''}</div><ul style="margin:6px 0">${lista}</ul><div class="timer">${mins.toFixed(1)} min - $${cmd.total_cobrado||0}</div>`;
+   g.appendChild(card);
+ });
 }
-function abrir(id){sel=id;const cmd=comandas[id];const tipo=getTipo(cmd.items);document.getElementById('modalTitulo').textContent=id+' - '+tipo;let det=`<b>Estado: ${cmd.estado_cocina||cmd.estado}</b><br>Key FB: ${cmd.firebaseKey}<br><br>`;cmd.items.forEach((it,idx)=>{const est=getEstadoItem(it);const esCocina=descomponerItem(getNombre(it)).some(s=>s.estacion==='COCINA');let estilo=esCocina?'class="item-cocina-resaltado"':'class="item-parrilla-tenue"';det+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span ${estilo}>${getNombre(it)} x${it.cantidad||1} [${est}]</span> ${esCocina&&est==='PENDIENTE'?`<button onclick="marcarItemEntregado(${idx})" style="background:#27ae60;color:#fff;border:none;padding:5px 10px;border-radius:4px;font-size:10px;cursor:pointer">✅ ENTREGAR</button>` : `<span style="font-size:10px;color:${est==='ENTREGADO_SECTOR'?'#f1c40f':'#888'}">${est}</span>`}</div>`;});document.getElementById('modalDetalle').innerHTML=det;document.getElementById('modal').style.display='flex';}
+function abrir(id){sel=id;const cmd=comandas[id];const tipo=getTipo(cmd.items);document.getElementById('modalTitulo').textContent=id+' - '+tipo;let det=`<b>Estado: ${cmd.estado_cocina||cmd.estado}</b><br>Cliente: ${cmd.cliente||''}<br>Dir: ${cmd.direccion||''}<br>Key FB: ${cmd.firebaseKey}<br><br>`;cmd.items.forEach((it,idx)=>{const est=getEstadoItem(it);const esCocina=descomponerItem(getNombre(it)).some(s=>s.estacion==='COCINA');let estilo=esCocina?'class="item-cocina-resaltado"':'class="item-parrilla-tenue"';det+=`<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0"><span ${estilo}>${getNombre(it)} x${it.cantidad||1} [${est}]</span> ${esCocina&&est==='PENDIENTE'?`<button onclick="marcarItemEntregado(${idx})" style="background:#27ae60;color:#fff;border:none;padding:5px 10px;border-radius:4px;font-size:10px;cursor:pointer">✅ ENTREGAR</button>` : `<span style="font-size:10px;color:${est==='ENTREGADO_SECTOR'?'#f1c40f':'#888'}">${est}</span>`}</div>`;});document.getElementById('modalDetalle').innerHTML=det;document.getElementById('modal').style.display='flex';}
 function cerrar(){document.getElementById('modal').style.display='none';}
 function marcarItemEntregado(idx){
  if(!sel) return; const cmd=comandas[sel]; const fbKey=cmd.firebaseKey;
