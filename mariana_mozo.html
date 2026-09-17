@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MARIANA v3.1 FIX MODAL - MANOS OK</title>
+<title>MARIANA v3.2 WHATSAPP FIX</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
@@ -28,6 +28,7 @@ select,input{width:100%;padding:8px;background:#111;border:1px solid #444;color:
 .card-mesa-grid.cobrada{border-color:#f1c40f;background:#000;box-shadow:0 0 20px rgba(241,196,15,.4);animation:parpadeo 1s infinite}
 .card-mesa-grid.esperando-mozo{border-color:#f1c40f!important;background:#2a2411!important;box-shadow:0 0 20px rgba(241,196,15,.7);animation:parpadeoRapido 0.6s infinite}
 .card-mesa-grid.manos-ok{border-color:#555!important;background:#111!important;opacity:0.7}
+.card-mesa-grid.whatsapp{border-color:#25D366!important;background:#102a18!important;box-shadow:0 0 15px rgba(37,211,102,.5)}
 @keyframes parpadeo{0%,100%{border-color:#f1c40f}50%{border-color:#fff}}
 @keyframes parpadeoRapido{0%,100%{opacity:1}50%{opacity:0.5}}
 .mesa-hdr-grid{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #333;padding-bottom:4px;margin-bottom:6px}
@@ -46,15 +47,16 @@ select,input{width:100%;padding:8px;background:#111;border:1px solid #444;color:
 </head>
 <body>
 <header>
-<h1>🔥 LA PERSEVERANCIA | MARIANA v3.1</h1>
+<h1>🔥 LA PERSEVERANCIA | MARIANA v3.2 WHATSAPP</h1>
 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
 <div class="info-widget" id="relojWidget">🕒 --:--:--</div>
 <div class="info-widget" style="color:#2ecc71">🪑 Activas: <span id="contadorMesasAtendidas">0</span></div>
 <div class="info-widget" style="color:#f1c40f">🔀 Esperando mozo: <span id="contadorMixtas">0</span></div>
+<div class="info-widget" style="color:#25D366">📱 WhatsApp: <span id="contadorWhatsApp">0</span></div>
 <div class="info-widget" style="color:#f1c40f">💰 Cobradas: <span id="contadorCobradas">0</span></div>
 <button class="btn-top" style="background:#000;border:1px solid #3498db;color:#3498db" onclick="abrirPropinas()">💸 PROPINAS</button>
 <button class="btn-top" id="btnSonido" onclick="toggleSonido()">🔔 SONIDO: ON</button>
-<span class="badge-live">• v3.1 FIX MODAL</span>
+<span class="badge-live">• v3.2 WHATSAPP FIX</span>
 </div>
 </header>
 <div class="layout-principal">
@@ -70,7 +72,7 @@ select,input{width:100%;padding:8px;background:#111;border:1px solid #444;color:
 <div style="display:flex;justify-content:space-between;color:#ffc107;font-weight:bold"><span>TOTAL:</span><span id="totalMonto">$0</span></div>
 <button style="width:100%;background:#e74c3c;border:none;color:#fff;padding:10px;font-weight:bold;border-radius:6px;cursor:pointer" onclick="enviarOActualizarComanda()">🚀 ENVIAR a comandas_activas</button>
 </aside>
-<main class="panel-produccion"><div class="seccion-titulo">📍 PLANO - KEY EXACTA + FIX MANOS</div><div class="mapa-contenedor" id="mapaMesasGrid"></div></main>
+<main class="panel-produccion"><div class="seccion-titulo">📍 PLANO + WHATSAPP</div><div class="mapa-contenedor" id="mapaMesasGrid"></div></main>
 <aside>
 <div class="box-kds-mini"><div class="seccion-titulo">📋 PENDIENTES (<span id="contadorPendientes">0</span>)</div><div id="listaPendientesKDS" style="max-height:180px;overflow-y:auto;font-size:11px"></div></div>
 <div class="box-mensajes" style="margin-top:12px"><div class="seccion-titulo">💬 MENSAJES</div><div class="chat-box" id="chatMensajes"></div><input type="text" id="inputMensaje" placeholder="Escribir aviso..." onkeypress="if(event.key==='Enter')enviarMensajeChat()"><button style="margin-top:6px;width:100%;padding:8px;background:#2980b9;border:none;color:#fff;border-radius:4px;cursor:pointer" onclick="enviarMensajeChat()">Enviar</button></div>
@@ -92,7 +94,7 @@ function getCant(it){return parseInt(it.cantidad||it.qty||1);}
 function getEstadoItem(it){return (it.estadoItem||'PENDIENTE').toUpperCase();}
 const PARRILLA_BASE=['asado','vacio','bife','entraña','morcilla','chorizo','provoleta','bondiola','choripan','morcipan'];
 const AGREGADOS_COCINA=['lechuga','tomate','jamon','queso','huevo','frita','papas'];
-const COCINA_PURA=['milanesa','suprema','pechuga','tortilla'];
+const COCINA_PURA=['milanesa','suprema','pechuga','tortilla','ravioles','tallarines','albóndigas'];
 function descomponerItem(n){n=(n||'').toLowerCase(); if(COCINA_PURA.some(k=>n.includes(k))) return [{estacion:'COCINA'}]; if(PARRILLA_BASE.some(k=>n.includes(k))) return AGREGADOS_COCINA.some(k=>n.includes(k))?[{estacion:'PARRILLA'},{estacion:'COCINA'}]:[{estacion:'PARRILLA'}]; return [{estacion:'COCINA'}];}
 function getTipo(items){let p=false,c=false;(items||[]).forEach(it=>{descomponerItem(getNombre(it)).forEach(s=>{if(s.estacion==='PARRILLA') p=true; else c=true;});}); if(p&&c) return 'MIXTA'; if(p) return 'PARRILLA'; return 'COCINA';}
 let audioCtx=null,ultimaAlarma={};
@@ -109,12 +111,45 @@ function renderGrilla(cat){const cont=document.getElementById('grillaProductos')
 function renderCarrito(){const cont=document.getElementById('resumenComanda');const tot=document.getElementById('totalMonto');cont.innerHTML='';if(!carrito.length){cont.innerHTML='<p style="color:#666;font-size:11px">No hay ítems</p>';tot.textContent='$0';return;}let total=0;carrito.forEach(it=>{total+=it.precio*it.cantidad;const r=document.createElement('div');r.style.cssText='display:flex;justify-content:space-between;font-size:11px;padding:3px 0;border-bottom:1px solid #222';r.innerHTML=`<span>${it.cantidad}x ${it.nombre}</span><span>$${it.precio*it.cantidad}</span>`;cont.appendChild(r);});tot.textContent=`$${total}`;}
 function evaluarCanalSeleccionado(){document.getElementById('boxDelivery').style.display=document.getElementById('selectUbicacion').value.includes('Delivery')?'block':'none';}
 function enviarOActualizarComanda(){if(!carrito.length){alert("Seleccioná productos");return;}const destino=document.getElementById('selectUbicacion').value;db.ref('comandas_activas/'+destino).once('value').then(snap=>{const ex=snap.val();let itemsFinal=[];const nuevoItems=carrito.map(c=>({n:c.nombre,nombre:c.nombre,cantidad:c.cantidad,p:c.precio,precio:c.precio,cat:c.cat,estadoItem:'PENDIENTE'}));if(ex&&ex.items){const mapa={};ex.items.forEach(i=>{mapa[getNombre(i)]={...i,n:getNombre(i),nombre:getNombre(i),cantidad:getCant(i),p:getPrecio(i),precio:getPrecio(i),estadoItem:i.estadoItem||'PENDIENTE'}});nuevoItems.forEach(n=>{const nom=getNombre(n);if(mapa[nom]&&mapa[nom].estadoItem!=='MANOS_EN_MESA'){mapa[nom].cantidad+=getCant(n);}else if(mapa[nom]&&mapa[nom].estadoItem==='MANOS_EN_MESA'){mapa[nom+'_'+Date.now()]=n;}else{mapa[nom]=n;}});itemsFinal=Object.values(mapa);}else{itemsFinal=nuevoItems;}const totalFinal=itemsFinal.reduce((a,c)=>a+(getPrecio(c)*getCant(c)),0);const ahora=Date.now();const data={mesa:destino,items:itemsFinal,total:totalFinal,total_cobrado:ex?(ex.total_cobrado||ex.total||totalFinal):totalFinal,estado:ex?(ex.estado==='OCUPADA_SILENCIOSA'?'RECIBIDO':ex.estado):'RECIBIDO',estado_parrilla:ex?(ex.estado_parrilla==='MANOS_EN_MESA'?'RECIBIDO':ex.estado_parrilla):'RECIBIDO',estado_cocina:ex?(ex.estado_cocina==='MANOS_EN_MESA'?'RECIBIDO':ex.estado_cocina):'RECIBIDO',emisor:'Mariana',hora:new Date().toLocaleTimeString().slice(0,5),timestamp:ex?ex.timestamp:ahora,timestamp_estado:ahora,id:ex?ex.id:ahora,nroOrden:ex?ex.nroOrden:ahora};db.ref('comandas_activas/'+destino).set(data);carrito=[];renderCarrito();});}
-function escucharOrdenesFirebase(){db.ref('comandas_activas').on('value',snap=>{const data=snap.val()||{};comandasCache=data;listadoMesasBase.forEach(id=>{const m=mesasDOM[id];if(m){m.card.className='card-mesa-grid';m.badge.textContent='LIBRE';m.preview.textContent='Sin comanda';m.total.textContent='$0';m.timer.textContent='--:--';}});let pend=0,ocup=0,esperandoMozo=0,cobr=0;const lista=document.getElementById('listaPendientesKDS');lista.innerHTML='';Object.entries(data).forEach(([fbKey,cmd])=>{if(!cmd||!cmd.mesa) return;const mesaReal=cmd.mesa||fbKey;const m=mesasDOM[mesaReal]||mesasDOM[fbKey];if(!m) return;const items=cmd.items||[];const tienePendiente=items.some(i=>getEstadoItem(i)==='PENDIENTE'||getEstadoItem(i)==='EN_COCINA');const tieneEsperando=items.some(i=>getEstadoItem(i)==='ENTREGADO_SECTOR');const todoEnManos=items.length>0&&items.every(i=>getEstadoItem(i)==='MANOS_EN_MESA');const esCobrada=(cmd.estado||'').toUpperCase()==='COBRADA';ocup++;const seg=Math.floor((Date.now()-(cmd.timestamp||Date.now()))/1000);const mm=String(Math.floor(seg/60)).padStart(2,'0');const ss=String(seg%60).padStart(2,'0');if(!esCobrada&&(tienePendiente||tieneEsperando)) pend++;if(tieneEsperando) esperandoMozo++;if(esCobrada){cobr++;m.card.classList.add('cobrada');m.badge.textContent=`💰 COBRADA $${cmd.total_cobrado||cmd.total}`;m.badge.style.background='#f1c40f';m.badge.style.color='#000';m.preview.innerHTML=`💰 $${cmd.total_cobrado||cmd.total}<br>${items.map(i=>getNombre(i)).join(', ')}`;}else if(todoEnManos){m.card.classList.add('manos-ok');m.badge.textContent=`OCUPADA - MANOS OK`;m.badge.style.background='#555';m.badge.style.color='#fff';m.preview.innerHTML=items.map(i=>`<span class="tachado">• ${getCant(i)}x ${getNombre(i)}</span>`).join('<br>')+'<br><small style="color:#888">Esperando nuevo pedido o cierre</small>';}else if(tieneEsperando){m.card.classList.add('ocupada');m.card.classList.add('esperando-mozo');m.badge.textContent=`✋ ESPERA MOZO`;m.badge.style.background='#f1c40f';m.badge.style.color='#000';m.preview.innerHTML=items.map(i=>{if(getEstadoItem(i)==='MANOS_EN_MESA') return `<span class="tachado">• ${getCant(i)}x ${getNombre(i)}</span>`;if(getEstadoItem(i)==='ENTREGADO_SECTOR') return `<span class="entregado-sector">• ${getCant(i)}x ${getNombre(i)} ✋</span>`;return `• ${getCant(i)}x ${getNombre(i)}`;}).join('<br>');}else{m.card.classList.add('ocupada');m.badge.textContent=`${getTipo(items)} P:${cmd.estado_parrilla||cmd.estado} C:${cmd.estado_cocina||cmd.estado}`;m.preview.innerHTML=items.map(i=>{if(getEstadoItem(i)==='MANOS_EN_MESA') return `<span class="tachado">• ${getCant(i)}x ${getNombre(i)}</span>`;return `• ${getCant(i)}x ${getNombre(i)}`;}).join('<br>');}m.total.textContent=`$${cmd.total_cobrado||cmd.total||0}`;m.timer.textContent=`${mm}:${ss}`;if(!esCobrada&&!todoEnManos){const d=document.createElement('div');d.style.cssText="background:#222;padding:6px;border-radius:4px;margin-bottom:4px";d.innerHTML=`<strong>${mesaReal}</strong> ${getTipo(items)} ${tieneEsperando?'✋ ESPERA MOZO':''} - ${items.filter(i=>getEstadoItem(i)!=='MANOS_EN_MESA').map(i=>getNombre(i)).join(', ')}`;lista.appendChild(d);}});document.getElementById('contadorPendientes').textContent=pend;document.getElementById('contadorMesasAtendidas').textContent=ocup;document.getElementById('contadorMixtas').textContent=esperandoMozo;document.getElementById('contadorCobradas').textContent=cobr;});}
+
+// ESCUCHA CON FIX WHATSAPP
+function escucharOrdenesFirebase(){db.ref('comandas_activas').on('value',snap=>{const data=snap.val()||{};comandasCache=data;
+listadoMesasBase.forEach(id=>{const m=mesasDOM[id];if(m){m.card.className='card-mesa-grid';m.badge.textContent='LIBRE';m.preview.textContent='Sin comanda';m.total.textContent='$0';m.timer.textContent='--:--';}});
+// Limpiar whatsapp previos
+document.querySelectorAll('.card-whatsapp-dinamica').forEach(e=>e.remove());
+let pend=0,ocup=0,esperandoMozo=0,cobr=0,whatsCount=0;
+const lista=document.getElementById('listaPendientesKDS');lista.innerHTML='';
+Object.entries(data).forEach(([fbKey,cmd])=>{
+if(!cmd||!cmd.items) return;
+let raw=(cmd.mesa||fbKey||'')+' '+(cmd.canal||'')+' '+(cmd.mesaBase||'');
+let esWhatsApp = raw.toLowerCase().includes('whatsapp');
+let mesaReal=cmd.mesa||fbKey;
+
+if(esWhatsApp){
+// CREAR CARD DINAMICA WHATSAPP
+whatsCount++;
+const cont=document.getElementById('mapaMesasGrid');
+const card=document.createElement('div');card.className='card-mesa-grid whatsapp card-whatsapp-dinamica ocupada';
+card.id='whatsapp_'+fbKey;
+card.onclick=()=>clickUbicacion(fbKey);
+let itemsHtml=(cmd.items||[]).map(i=>`• ${getCant(i)}x ${getNombre(i)}`).join('<br>');
+card.innerHTML=`<div class="mesa-hdr-grid"><span class="mesa-title-grid" style="color:#25D366">📱 ${mesaReal.toUpperCase()}</span><span class="mesa-status-badge" style="background:#25D366;color:#000">WHATSAPP $${cmd.total||cmd.total_cobrado||0}</span></div><div style="font-size:11px;color:#fff">${cmd.cliente||''}<br>${cmd.direccion||''}<br><span style="color:#25D366">${cmd.telefono||''}</span></div><div style="font-size:10px;margin-top:6px">${itemsHtml}</div><div class="timer-badge" style="margin-top:6px;color:#25D366;border:1px solid #25D366">${cmd.hora||''} - ${cmd.pago||''}</div>`;
+cont.appendChild(card);
+pend++;
+ocup++;
+const d=document.createElement('div');d.style.cssText="background:#102a18;border:1px solid #25D366;padding:6px;border-radius:4px;margin-bottom:4px";d.innerHTML=`<strong style="color:#25D366">📱 ${mesaReal}</strong> ${cmd.cliente||''} - $${cmd.total||0} - ${cmd.pago||''}<br>${(cmd.items||[]).map(i=>getNombre(i)).join(', ')}`;lista.appendChild(d);
+return;
+}
+
+const m=mesasDOM[mesaReal]||mesasDOM[fbKey];if(!m) return;
+const items=cmd.items||[];const tienePendiente=items.some(i=>getEstadoItem(i)==='PENDIENTE'||getEstadoItem(i)==='EN_COCINA');const tieneEsperando=items.some(i=>getEstadoItem(i)==='ENTREGADO_SECTOR');const todoEnManos=items.length>0&&items.every(i=>getEstadoItem(i)==='MANOS_EN_MESA');const esCobrada=(cmd.estado||'').toUpperCase()==='COBRADA';ocup++;const seg=Math.floor((Date.now()-(cmd.timestamp||Date.now()))/1000);const mm=String(Math.floor(seg/60)).padStart(2,'0');const ss=String(seg%60).padStart(2,'0');if(!esCobrada&&(tienePendiente||tieneEsperando)) pend++;if(tieneEsperando) esperandoMozo++;if(esCobrada){cobr++;m.card.classList.add('cobrada');m.badge.textContent=`💰 COBRADA $${cmd.total_cobrado||cmd.total}`;m.badge.style.background='#f1c40f';m.badge.style.color='#000';m.preview.innerHTML=`💰 $${cmd.total_cobrado||cmd.total}<br>${items.map(i=>getNombre(i)).join(', ')}`;}else if(todoEnManos){m.card.classList.add('manos-ok');m.badge.textContent=`OCUPADA - MANOS OK`;m.badge.style.background='#555';m.badge.style.color='#fff';m.preview.innerHTML=items.map(i=>`<span class="tachado">• ${getCant(i)}x ${getNombre(i)}</span>`).join('<br>')+'<br><small style="color:#888">Esperando nuevo pedido o cierre</small>';}else if(tieneEsperando){m.card.classList.add('ocupada');m.card.classList.add('esperando-mozo');m.badge.textContent=`✋ ESPERA MOZO`;m.badge.style.background='#f1c40f';m.badge.style.color='#000';m.preview.innerHTML=items.map(i=>{if(getEstadoItem(i)==='MANOS_EN_MESA') return `<span class="tachado">• ${getCant(i)}x ${getNombre(i)}</span>`;if(getEstadoItem(i)==='ENTREGADO_SECTOR') return `<span class="entregado-sector">• ${getCant(i)}x ${getNombre(i)} ✋</span>`;return `• ${getCant(i)}x ${getNombre(i)}`;}).join('<br>');}else{m.card.classList.add('ocupada');m.badge.textContent=`${getTipo(items)} P:${cmd.estado_parrilla||cmd.estado} C:${cmd.estado_cocina||cmd.estado}`;m.preview.innerHTML=items.map(i=>{if(getEstadoItem(i)==='MANOS_EN_MESA') return `<span class="tachado">• ${getCant(i)}x ${getNombre(i)}</span>`;return `• ${getCant(i)}x ${getNombre(i)}`;}).join('<br>');}m.total.textContent=`$${cmd.total_cobrado||cmd.total||0}`;m.timer.textContent=`${mm}:${ss}`;if(!esCobrada&&!todoEnManos){const d=document.createElement('div');d.style.cssText="background:#222;padding:6px;border-radius:4px;margin-bottom:4px";d.innerHTML=`<strong>${mesaReal}</strong> ${getTipo(items)} ${tieneEsperando?'✋ ESPERA MOZO':''} - ${items.filter(i=>getEstadoItem(i)!=='MANOS_EN_MESA').map(i=>getNombre(i)).join(', ')}`;lista.appendChild(d);}});
+document.getElementById('contadorPendientes').textContent=pend;document.getElementById('contadorMesasAtendidas').textContent=ocup;document.getElementById('contadorMixtas').textContent=esperandoMozo;document.getElementById('contadorCobradas').textContent=cobr;document.getElementById('contadorWhatsApp').textContent=whatsCount;
+});}
 function escucharMensajesFirebase(){db.ref('mensajes_chat').limitToLast(20).on('value',snap=>{const box=document.getElementById('chatMensajes');box.innerHTML='';const data=snap.val();if(!data)return;Object.values(data).sort((a,b)=>(a.timestamp||0)-(b.timestamp||0)).forEach(m=>{const d=document.createElement('div');d.className='chat-msg';d.innerHTML=`<strong>${m.remitente}</strong> (${m.hora||''})<br>${m.texto}`;box.appendChild(d);});box.scrollTop=box.scrollHeight;});}
 function checkAlarmas(){Object.values(comandasCache).forEach(cmd=>{if(!cmd.mesa)return;const items=cmd.items||[];const tieneEsperando=items.some(i=>getEstadoItem(i)==='ENTREGADO_SECTOR');const tienePend=items.some(i=>getEstadoItem(i)==='PENDIENTE');if(tieneEsperando||tienePend){const ts=cmd.timestamp_estado||cmd.timestamp||Date.now();const mins=(Date.now()-ts)/1000/60;let debe=null;if(tieneEsperando&&mins>=1) debe='ESPERA_MOZO'; else if(tienePend&&mins>=5) debe='RECIBIDO'; if(debe){const k=(cmd.mesa)+'_'+debe;if(!ultimaAlarma[k]||Date.now()-ultimaAlarma[k]>30000){alarmaTipo(debe);ultimaAlarma[k]=Date.now();}}}});}
 function clickUbicacion(id){
   idMesaGestion=id;
-  const cmd=comandasCache[id] || Object.values(comandasCache).find(c=>c.mesa===id);
+  const cmd=comandasCache[id] || Object.values(comandasCache).find(c=>c.mesa===id) || comandasCache[id];
   document.getElementById('tituloOpcionesMesa').textContent=`Gestionar: ${id}`;
   const contExtra=document.getElementById('btnsExtras');
   contExtra.innerHTML='';
@@ -127,7 +162,7 @@ function clickUbicacion(id){
     }).join('');
     let tieneEsperandoMozo=items.some(i=>getEstadoItem(i)==='ENTREGADO_SECTOR');
     let pendientesParaImprimir=items.filter(i=>getEstadoItem(i)!=='MANOS_EN_MESA');
-    document.getElementById('detalleEstadosSeparados').innerHTML=`${getTipo(items)}<br>P: ${cmd.estado_parrilla||cmd.estado} C: ${cmd.estado_cocina||cmd.estado}<br><br>${itemsHtml}<br><br>Total $${cmd.total_cobrado||cmd.total}`;
+    document.getElementById('detalleEstadosSeparados').innerHTML=`${getTipo(items)}<br>P: ${cmd.estado_parrilla||cmd.estado} C: ${cmd.estado_cocina||cmd.estado}<br>Cliente: ${cmd.cliente||''} Dir: ${cmd.direccion||''} Tel: ${cmd.telefono||''} Pago: ${cmd.pago||''}<br><br>${itemsHtml}<br><br>Total $${cmd.total_cobrado||cmd.total}`;
     if(tieneEsperandoMozo){contExtra.innerHTML+=`<button class="btn-manos" onclick="marcarManosEnMesa('${id}')">✋ MANOS EN MESA - APAGAR ALARMA</button>`;}
     if(pendientesParaImprimir.length>0){contExtra.innerHTML+=`<button class="btn-print" onclick="imprimirSoloPendientes('${id}')">🖨️ IMPRIMIR SOLO PENDIENTES (${pendientesParaImprimir.length})</button>`;}
     document.getElementById('btnAgregar').style.display=(cmd.estado==='COBRADA')?'none':'block';
