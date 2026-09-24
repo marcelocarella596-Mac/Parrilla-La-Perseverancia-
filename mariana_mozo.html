@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
 
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 
-<title>MARIANA v3.3 - MOTOR ESTACIONES</title>
+<title>MARIANA v3.3 MOTOR ESTACIONES</title>
+
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -24,8 +26,9 @@ font-family:'Segoe UI',sans-serif
 body{
 background:#121212;
 color:white;
-padding:10px
+padding:10px;
 }
+
 
 
 header{
@@ -38,37 +41,36 @@ display:flex;
 justify-content:space-between;
 align-items:center;
 
-flex-wrap:wrap;
-gap:10px;
-
 margin-bottom:15px;
 
 }
 
 
+
 h1{
+
 font-size:18px;
+
 }
 
 
-.layout-principal{
+
+.layout{
 
 display:grid;
 
 grid-template-columns:
-340px
+330px
 1fr
-320px;
+300px;
 
 gap:15px;
 
 }
 
 
-.panel-formulario,
-.panel-produccion,
-.box-kds-mini,
-.box-mensajes{
+
+.panel{
 
 background:#1e1e1e;
 
@@ -83,24 +85,24 @@ padding:12px;
 
 
 
-.seccion-titulo{
+.titulo{
+
+color:#ffc107;
 
 font-size:12px;
 
 font-weight:bold;
 
-color:#ffc107;
+margin-bottom:8px;
 
 text-transform:uppercase;
-
-margin-bottom:8px;
 
 }
 
 
 
-select,
-input{
+input,
+select{
 
 width:100%;
 
@@ -108,12 +110,11 @@ padding:8px;
 
 background:#111;
 
-border:
-1px solid #444;
+border:1px solid #444;
 
 color:white;
 
-border-radius:4px;
+border-radius:5px;
 
 margin-bottom:6px;
 
@@ -121,106 +122,71 @@ margin-bottom:6px;
 
 
 
+button{
 
-/* =====================
-   ESTACIONES
-===================== */
+cursor:pointer;
 
-
-.estado-estacion{
-
-padding:5px;
+border:none;
 
 border-radius:5px;
 
-font-size:11px;
+padding:9px;
 
 font-weight:bold;
 
-margin:3px 0;
-
 }
 
 
 
-.estado-recibido{
-
-background:#333;
-color:#aaa;
-
-}
-
-
-.estado-preparando{
-
-background:#8e44ad;
-
-color:white;
-
-}
-
-
-.estado-listo{
+.btn-enviar{
 
 background:#27ae60;
 
 color:white;
 
-}
-
-
-.estado-manos{
-
-background:#555;
-
-color:#ccc;
-
-text-decoration:line-through;
+width:100%;
 
 }
 
 
 
+.btn-chat{
 
-/* =====================
-   MESAS
-===================== */
+background:#2980b9;
+
+color:white;
+
+width:100%;
+
+}
 
 
-.mapa-contenedor{
 
-background:#111;
-
-border:
-1px dashed #444;
-
-border-radius:8px;
-
-padding:15px;
+.mapa{
 
 display:grid;
 
 grid-template-columns:
-repeat(auto-fill,minmax(200px,1fr));
+repeat(auto-fill,minmax(180px,1fr));
 
-gap:12px;
+gap:10px;
 
 }
 
 
 
-.card-mesa-grid{
+.mesa{
 
-background:#1a1a1a;
+background:#181818;
 
 border:
 2px solid #8b0000;
 
-border-radius:8px;
-
 padding:10px;
 
-min-height:150px;
+border-radius:8px;
+
+min-height:140px;
 
 cursor:pointer;
 
@@ -228,46 +194,17 @@ cursor:pointer;
 
 
 
-.card-mesa-grid.ocupada{
+.mesa.ocupada{
 
 border-color:#27ae60;
 
 }
 
 
-.card-mesa-grid.whatsapp{
 
-border-color:#25D366;
+.mesa.lista{
 
-background:#102a18;
-
-}
-
-
-
-.mesa-header{
-
-display:flex;
-
-justify-content:space-between;
-
-border-bottom:
-1px solid #333;
-
-padding-bottom:5px;
-
-margin-bottom:8px;
-
-}
-
-
-.mesa-title{
-
-color:#ffc107;
-
-font-size:12px;
-
-font-weight:bold;
+border-color:#f1c40f;
 
 }
 
@@ -275,11 +212,11 @@ font-weight:bold;
 
 .badge{
 
-font-size:10px;
+background:#333;
 
 padding:3px 6px;
 
-background:#333;
+font-size:10px;
 
 border-radius:4px;
 
@@ -287,11 +224,7 @@ border-radius:4px;
 
 
 
-
-/* PRODUCTOS */
-
-
-.grilla-productos{
+.productos{
 
 display:grid;
 
@@ -300,7 +233,7 @@ repeat(2,1fr);
 
 gap:6px;
 
-max-height:260px;
+max-height:250px;
 
 overflow:auto;
 
@@ -308,12 +241,11 @@ overflow:auto;
 
 
 
-.card-prod{
+.producto{
 
 background:#252525;
 
-border:
-1px solid #444;
+border:1px solid #444;
 
 padding:8px;
 
@@ -325,7 +257,7 @@ cursor:pointer;
 
 
 
-.card-prod:hover{
+.producto:hover{
 
 background:#333;
 
@@ -333,85 +265,67 @@ background:#333;
 
 
 
-
-/* CHAT */
-
-
-.chat-box{
+.chat{
 
 height:180px;
 
-overflow:auto;
-
 background:#111;
 
-border:
-1px solid #333;
+overflow:auto;
 
 padding:8px;
 
 font-size:11px;
 
-}
-
-
-
-.chat-msg{
-
-background:#222;
-
-padding:5px;
-
-border-left:
-3px solid #2980b9;
-
-margin-bottom:5px;
+border:1px solid #333;
 
 }
 
 
 
+.estado{
 
+padding:4px;
 
-/* MODAL */
+border-radius:4px;
 
+font-size:11px;
 
-.modal-overlay{
-
-position:fixed;
-
-top:0;
-left:0;
-
-width:100%;
-height:100%;
-
-background:
-rgba(0,0,0,.85);
-
-display:none;
-
-align-items:center;
-
-justify-content:center;
-
-z-index:1000;
+margin-top:4px;
 
 }
 
 
 
-.modal-contenido{
+.recibido{
 
-background:#1e1e1e;
+background:#444;
 
-padding:20px;
+}
 
-border-radius:8px;
 
-width:90%;
 
-max-width:550px;
+.preparando{
+
+background:#8e44ad;
+
+}
+
+
+
+.listo{
+
+background:#27ae60;
+
+}
+
+
+
+.manos{
+
+background:#555;
+
+text-decoration:line-through;
 
 }
 
@@ -422,11 +336,12 @@ max-width:550px;
 </head>
 
 
+
 <body>
 
 
-<header>
 
+<header>
 
 <h1>
 🔥 LA PERSEVERANCIA
@@ -435,30 +350,28 @@ MARIANA v3.3 MOTOR ESTACIONES
 </h1>
 
 
-<div>
-
 <span class="badge">
 🟢 ONLINE
 </span>
-
-</div>
 
 
 </header>
 
 
-<div class="layout-principal">
+
+<div class="layout">
 
 
-<aside class="panel-formulario">
+
+<aside class="panel">
 
 
-<div class="seccion-titulo">
-1. UBICACIÓN
+<div class="titulo">
+Ubicación
 </div>
 
 
-<select id="selectUbicacion">
+<select id="ubicacion">
 
 <option>
 Salón - Mesa 1
@@ -476,91 +389,81 @@ Salón - Mesa 3
 Salón - Mesa 4
 </option>
 
-
 <option>
 Vereda - Mesa 5
 </option>
 
-
 <option>
-Vereda - Mesa 6
+Canal WhatsApp
 </option>
-
-
-<option>
-Canal - Delivery
-</option>
-
-
-<option>
-Canal - WhatsApp
-</option>
-
 
 </select>
 
 
 
-<div class="seccion-titulo">
-2. MENU
+
+<div class="titulo">
+Productos
 </div>
-
-
-<div id="contenedorCategorias"></div>
 
 
 <div
-id="grillaProductos"
-class="grilla-productos">
+id="productos"
+class="productos">
 
 </div>
 
 
-<div class="seccion-titulo">
 
-3. COMANDA
 
+<div class="titulo">
+Comanda
 </div>
 
 
-<div id="resumenComanda">
+<div id="carrito">
 
 </div>
 
 
 <h3>
 TOTAL:
-<span id="totalMonto">
+<span id="total">
 $0
 </span>
 </h3>
 
 
-<button
-onclick="enviarOActualizarComanda()">
 
-🚀 ENVIAR COMANDA
+<button
+class="btn-enviar"
+onclick="enviarComanda()">
+
+🚀 ENVIAR
 
 </button>
+
 
 
 </aside>
 
 
 
-<main class="panel-produccion">
 
 
-<div class="seccion-titulo">
+<main class="panel">
 
-📍 PLANO OPERATIVO
+
+<div class="titulo">
+
+MESAS ACTIVAS
 
 </div>
 
 
 <div
-id="mapaMesasGrid"
-class="mapa-contenedor">
+id="mapa"
+class="mapa">
 
 </div>
 
@@ -569,52 +472,56 @@ class="mapa-contenedor">
 
 
 
+
+
 <aside>
 
 
-<div class="box-kds-mini">
+<div class="panel">
 
 
-<div class="seccion-titulo">
+<div class="titulo">
 
-📋 PENDIENTES
-
-</div>
-
-
-<div id="listaPendientesKDS">
+PENDIENTES
 
 </div>
 
 
+<div id="pendientes">
+
+</div>
+
+
 </div>
 
 
 
-<div class="box-mensajes">
+
+<div class="panel">
 
 
-<div class="seccion-titulo">
+<div class="titulo">
 
-💬 CHAT
+CHAT
 
 </div>
 
 
 <div
-id="chatMensajes"
-class="chat-box">
+id="chat"
+class="chat">
 
 </div>
 
 
 <input
-id="inputMensaje"
+id="mensaje"
 placeholder="Mensaje">
 
 
 <button
-onclick="enviarMensajeChat()">
+class="btn-chat"
+onclick="enviarMensaje()">
 
 Enviar
 
@@ -630,11 +537,13 @@ Enviar
 
 </div>
 
-</script>
-  // ============================================
-// MARIANA v3.3
-// MOTOR CENTRAL DE COMANDAS
-// ============================================
+
+<script>
+
+
+// =====================================
+// FIREBASE
+// =====================================
 
 
 const firebaseConfig={
@@ -653,21 +562,17 @@ projectId:
 };
 
 
-
-if(!firebase.apps.length){
-
+if(!firebase.apps.length)
 firebase.initializeApp(firebaseConfig);
 
-}
 
 
 const db=firebase.database();
 
 
-
-// ============================================
-// ESTADOS DEL SISTEMA
-// ============================================
+// =====================================
+// CORE ESTADOS
+// =====================================
 
 
 const ESTADOS={
@@ -680,17 +585,10 @@ LISTO:"LISTO",
 
 ENTREGADO_SECTOR:"ENTREGADO_SECTOR",
 
-MANOS_EN_MESA:"MANOS_EN_MESA",
-
-COBRADA:"COBRADA"
+MANOS_EN_MESA:"MANOS_EN_MESA"
 
 };
 
-
-
-// ============================================
-// ESTACIONES
-// ============================================
 
 
 const ESTACIONES={
@@ -704,65 +602,57 @@ MIXTA:"MIXTA"
 };
 
 
-
-// ============================================
-// MEMORIA LOCAL
-// ============================================
-
-
-let MENU=[];
 
 let carrito=[];
 
-let categoriaActual="Todos";
+let comandas={};
 
-let comandasCache={};
+let menu=[
 
-let mesaSeleccionada=null;
+{
+nombre:"Choripán",
+precio:5000
+},
 
-let sonido=true;
+{
+nombre:"Morcipán",
+precio:5000
+},
 
+{
+nombre:"Asado",
+precio:12000
+},
 
+{
+nombre:"Asado c/fritas",
+precio:17000
+},
 
-// ============================================
-// MAPA OPERATIVO
-// ============================================
+{
+nombre:"Vacío c/fritas",
+precio:17000
+},
 
+{
+nombre:"Milanesa",
+precio:12000
+},
 
-const UBICACIONES=[
-
-"Salón - Mesa 1",
-
-"Salón - Mesa 2",
-
-"Salón - Mesa 3",
-
-"Salón - Mesa 4",
-
-"Vereda - Mesa 5",
-
-"Vereda - Mesa 6",
-
-"Canal - Delivery",
-
-"Canal - WhatsApp"
+{
+nombre:"Sandwich Milanesa",
+precio:7000
+}
 
 ];
 
-// ================================
-// CORE V3 COMANDAS MIXTAS
-// ================================
 
-const ESTACIONES={
-PARRILLA:"PARRILLA",
-COCINA:"COCINA",
-MIXTA:"MIXTA"
-};
+// =====================================
+// MOTOR ESTACION
+// =====================================
 
 
-
-
-function normalizarTexto(t){
+function normalizar(t){
 
 return (t||"")
 .toLowerCase()
@@ -775,136 +665,74 @@ return (t||"")
 
 function detectarEstacion(nombre){
 
-let n=normalizarTexto(nombre);
+let n=normalizar(nombre);
 
 
 let parrilla=[
+
 "asado",
 "vacio",
 "vacío",
-"bife",
-"entraña",
 "chorizo",
 "morcilla",
-"bondiola",
-"provoleta"
+"choripan",
+"morcipan"
+
 ];
 
 
 let cocina=[
+
+"frita",
 "milanesa",
-"suprema",
-"tortilla",
-"ensalada",
-"papas",
-"pure",
-"puré"
+"suprema"
+
 ];
 
 
-let p=parrilla.some(x=>n.includes(x));
-let c=cocina.some(x=>n.includes(x));
+
+let p=
+parrilla.some(x=>n.includes(x));
 
 
-if(p&&c)return ESTACIONES.MIXTA;
+let c=
+cocina.some(x=>n.includes(x));
 
-if(p)return ESTACIONES.PARRILLA;
+
+
+if(p&&c)
+return ESTACIONES.MIXTA;
+
+
+if(p)
+return ESTACIONES.PARRILLA;
+
+
 
 return ESTACIONES.COCINA;
 
+
 }
+
+// =====================================
+// CREAR ITEM OPERATIVO
+// =====================================
 
 
 function prepararItem(item){
 
+
 return {
 
-...item,
+nombre:item.nombre,
+
+precio:item.precio,
+
+cantidad:item.cantidad || 1,
+
 
 estacion:
-detectarEstacion(
-item.nombre || item.n
-),
-
-estadoItem:
-ESTADOS.RECIBIDO,
-
-timestamp:
-Date.now()
-
-};
-
-}  
-
-
-
-// ============================================
-// MOTOR DE CLASIFICACION
-// ============================================
-
-
-const REGLAS_PARRILLA=[
-
-"asado",
-"vacío",
-"vacio",
-"bife",
-"entraña",
-"chorizo",
-"morcilla",
-"bondiola",
-"molleja",
-"chinchu",
-"matambre",
-"pollo",
-"provoleta"
-
-];
-
-
-
-const REGLAS_COCINA=[
-
-"milanesa",
-"suprema",
-"tortilla",
-"ensalada",
-"papas",
-"pure",
-"puré",
-"huevo",
-"raviol",
-"pasta"
-
-];
-   
-
-
-
-
-
-// ============================================
-// DESCOMPONER ITEM
-// ============================================
-
-
-function descomponerItem(item){
-
-
-let estacion=
-detectarEstacion(
-item.nombre || item.n
-);
-
-
-
-return {
-
-
-...item,
-
-
-estacion,
+detectarEstacion(item.nombre),
 
 
 estadoItem:
@@ -913,7 +741,6 @@ ESTADOS.RECIBIDO,
 
 timestamp:
 Date.now()
-
 
 };
 
@@ -923,32 +750,153 @@ Date.now()
 
 
 
-// ============================================
-// ARMAR COMANDA NUEVA
-// ============================================
+// =====================================
+// AGREGAR PRODUCTO
+// =====================================
 
 
-function prepararComanda(items){
+function agregarProducto(nombre){
 
 
-let procesados=[];
+let prod=
+menu.find(
+p=>p.nombre===nombre
+);
 
 
-items.forEach(i=>{
+if(!prod)return;
 
 
-let item=
-descomponerItem(i);
+let existe=
+carrito.find(
+x=>x.nombre===nombre
+);
 
 
-procesados.push(item);
+
+if(existe){
+
+existe.cantidad++;
+
+}else{
+
+
+carrito.push({
+
+...prod,
+
+cantidad:1
+
+});
+
+
+}
+
+
+renderCarrito();
+
+
+}
+
+
+
+
+// =====================================
+// RENDER PRODUCTOS
+// =====================================
+
+
+function renderProductos(){
+
+
+let cont=
+document.getElementById("productos");
+
+
+cont.innerHTML="";
+
+
+menu.forEach(p=>{
+
+
+let d=document.createElement("div");
+
+
+d.className="producto";
+
+
+d.innerHTML=
+
+`
+
+<b>${p.nombre}</b>
+<br>
+$${p.precio}
+
+`;
+
+
+d.onclick=()=>agregarProducto(p.nombre);
+
+
+cont.appendChild(d);
+
+
+});
+
+
+}
+
+
+
+
+
+// =====================================
+// RENDER CARRITO
+// =====================================
+
+
+function renderCarrito(){
+
+
+let div=
+document.getElementById("carrito");
+
+
+div.innerHTML="";
+
+
+let total=0;
+
+
+
+carrito.forEach(i=>{
+
+
+total+=
+i.precio*i.cantidad;
+
+
+
+div.innerHTML+=
+
+`
+
+<div>
+
+${i.cantidad}x ${i.nombre}
+
+</div>
+
+`;
 
 
 });
 
 
 
-return procesados;
+document.getElementById("total")
+.innerText="$"+total;
 
 
 }
@@ -956,21 +904,24 @@ return procesados;
 
 
 
+// =====================================
+// GENERAR TIPO COMANDA
+// =====================================
 
-// ============================================
-// TIPO GENERAL COMANDA
-// ============================================
 
-
-function tipoComanda(items){
+function obtenerTipoComanda(items){
 
 
 let estaciones=
-items.map(i=>i.estacion);
+items.map(
+i=>i.estacion
+);
 
 
 
-if(estaciones.includes("MIXTA"))
+if(
+estaciones.includes("MIXTA")
+)
 
 return "MIXTA";
 
@@ -986,10 +937,11 @@ return "MIXTA";
 
 
 
-if(estaciones.includes("PARRILLA"))
+if(
+estaciones.includes("PARRILLA")
+)
 
 return "PARRILLA";
-
 
 
 return "COCINA";
@@ -997,5 +949,628 @@ return "COCINA";
 
 }
 
+
+
+
+
+// =====================================
+// ENVIAR COMANDA FIREBASE
+// =====================================
+
+
+function enviarComanda(){
+
+
+if(carrito.length===0){
+
+alert("Sin productos");
+
+return;
+
+}
+
+
+
+let items=
+carrito.map(
+i=>prepararItem(i)
+);
+
+
+
+let destino=
+document.getElementById("ubicacion")
+.value;
+
+
+
+let tipo=
+obtenerTipoComanda(items);
+
+
+
+let ahora=Date.now();
+
+
+
+let comanda={
+
+
+mesa:destino,
+
+
+items:items,
+
+
+tipoComanda:tipo,
+
+
+estado:"RECIBIDO",
+
+
+
+estado_parrilla:
+
+items.some(
+i=>i.estacion==="PARRILLA" ||
+i.estacion==="MIXTA"
+
+)
+
+?
+"RECIBIDO"
+:
+"NO_REQUERIDO",
+
+
+
+estado_cocina:
+
+items.some(
+i=>i.estacion==="COCINA" ||
+i.estacion==="MIXTA"
+
+)
+
+?
+"RECIBIDO"
+:
+"NO_REQUERIDO",
+
+
+
+timestamp:ahora,
+
+
+timestamp_estado:ahora,
+
+
+emisor:"Mariana"
+
+
+};
+
+
+
+db.ref(
+"comandas_activas/"+destino
+)
+.set(comanda);
+
+
+
+carrito=[];
+
+renderCarrito();
+
+
+alert(
+"Comanda enviada: "+tipo
+);
+
+
+}
+
+
+
+
+
+
+// =====================================
+// ESCUCHA COMANDAS
+// =====================================
+
+
+function escucharComandas(){
+
+
+db.ref("comandas_activas")
+.on("value",snap=>{
+
+
+comandas=
+snap.val()||{};
+
+
+renderMesas();
+
+
+});
+
+
+}
+
+
+
+
+
+// =====================================
+// INICIALIZACION
+// =====================================
+
+
+window.onload=function(){
+
+
+renderProductos();
+
+
+renderCarrito();
+
+
+escucharComandas();
+
+
+escucharChat();
+
+
+};
+
+// =====================================
+// PLANO DE MESAS
+// =====================================
+
+
+const mesas=[
+
+"Salón - Mesa 1",
+"Salón - Mesa 2",
+"Salón - Mesa 3",
+"Salón - Mesa 4",
+"Vereda - Mesa 5"
+
+];
+
+
+
+
+
+function renderMesas(){
+
+
+let cont=
+document.getElementById("mapa");
+
+
+cont.innerHTML="";
+
+
+mesas.forEach(mesa=>{
+
+
+let cmd=
+comandas[mesa];
+
+
+
+let card=
+document.createElement("div");
+
+
+card.className="mesa";
+
+
+
+if(cmd){
+
+card.classList.add("ocupada");
+
+
+let lista=
+cmd.items.map(i=>{
+
+
+let estado=i.estadoItem;
+
+
+return `
+
+<div>
+
+${i.cantidad}x ${i.nombre}
+
+<br>
+
+<span class="estado ${estado.toLowerCase()}">
+
+${i.estacion}
+-
+${estado}
+
+</span>
+
+
+</div>
+
+
+`;
+
+
+}).join("");
+
+
+
+let listo=
+verificarListo(cmd);
+
+
+
+if(listo){
+
+card.classList.add("lista");
+
+}
+
+
+
+card.innerHTML=`
+
+<b>${mesa}</b>
+
+
+<br><br>
+
+
+${lista}
+
+
+<br>
+
+
+<strong>
+
+Estado:
+${listo?"🟢 LISTO PARA SERVIR":"🟡 PRODUCCIÓN"}
+
+</strong>
+
+
+`;
+
+
+
+}else{
+
+
+card.innerHTML=
+
+`
+
+<b>${mesa}</b>
+
+<br><br>
+
+LIBRE
+
+`;
+
+}
+
+
+cont.appendChild(card);
+
+
+
+});
+
+
+
+}
+
+
+
+////////////////////////////////////////////////////
+// CONTROL DE PLATO MIXTO
+////////////////////////////////////////////////////
+
+
+
+function verificarListo(comanda){
+
+
+
+let necesitaParrilla=false;
+
+let necesitaCocina=false;
+
+
+
+let parrillaLista=true;
+
+let cocinaLista=true;
+
+
+
+comanda.items.forEach(i=>{
+
+
+if(
+i.estacion==="PARRILLA"
+||
+i.estacion==="MIXTA"
+){
+
+necesitaParrilla=true;
+
+
+if(
+i.estadoItem!=="MANOS_EN_MESA"
+&&
+i.estadoItem!=="LISTO"
+){
+
+parrillaLista=false;
+
+}
+
+
+}
+
+
+
+
+if(
+i.estacion==="COCINA"
+||
+i.estacion==="MIXTA"
+){
+
+
+necesitaCocina=true;
+
+
+
+if(
+i.estadoItem!=="MANOS_EN_MESA"
+&&
+i.estadoItem!=="LISTO"
+){
+
+cocinaLista=false;
+
+}
+
+
+}
+
+
+
+});
+
+
+
+return
+
+
+(!necesitaParrilla || parrillaLista)
+
+&&
+
+(!necesitaCocina || cocinaLista);
+
+
+
+}
+
+
+
+
+
+
+////////////////////////////////////////////////////
+// CHAT
+////////////////////////////////////////////////////
+
+
+
+function escucharChat(){
+
+
+db.ref("mensajes_chat")
+.limitToLast(30)
+
+.on("value",snap=>{
+
+
+let box=
+document.getElementById("chat");
+
+
+box.innerHTML="";
+
+
+let data=
+snap.val();
+
+
+if(!data)return;
+
+
+
+Object.values(data)
+.forEach(m=>{
+
+
+box.innerHTML+=`
+
+<div>
+
+<b>${m.remitente}</b>
+
+<br>
+
+${m.texto}
+
+</div>
+
+<hr>
+
+`;
+
+
+});
+
+
+});
+
+}
+
+
+
+
+
+function enviarMensaje(){
+
+
+let input=
+document.getElementById("mensaje");
+
+
+if(!input.value)return;
+
+
+
+db.ref("mensajes_chat")
+.push({
+
+remitente:"Mariana",
+
+texto:input.value,
+
+timestamp:Date.now(),
+
+hora:
+new Date()
+.toLocaleTimeString()
+
+});
+
+
+
+input.value="";
+
+
+}
+
+
+
+
+
+////////////////////////////////////////////////////
+// APOYO PARA SECTORES
+////////////////////////////////////////////////////
+
+
+function estadoSector(comanda,sector){
+
+
+let items=
+comanda.items.filter(i=>
+
+i.estacion===sector
+||
+i.estacion==="MIXTA"
+
+);
+
+
+
+if(items.length===0)
+
+return "NO_REQUERIDO";
+
+
+
+if(
+items.every(i=>
+i.estadoItem==="MANOS_EN_MESA"
+||
+i.estadoItem==="LISTO"
+)
+
+)
+
+return "MANOS";
+
+
+
+return "PENDIENTE";
+
+
+}
+
+
+
+
+
+////////////////////////////////////////////////////
+// ACTUALIZAR ESTADO DESDE SECTORES
+////////////////////////////////////////////////////
+
+
+function actualizarEstadoGeneral(mesa){
+
+
+let cmd=
+comandas[mesa];
+
+
+if(!cmd)return;
+
+
+
+let parrilla=
+estadoSector(cmd,"PARRILLA");
+
+
+let cocina=
+estadoSector(cmd,"COCINA");
+
+
+
+db.ref(
+"comandas_activas/"+mesa
+)
+
+.update({
+
+estado_parrilla:parrilla,
+
+estado_cocina:cocina,
+
+
+});
+
+
+
+}
+
+
+
+
+</script>
+
+
 </body>
-</html>
+
+</html>   
