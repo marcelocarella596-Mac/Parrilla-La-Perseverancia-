@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GUSTAVO v3.4 - COMANDAS MIXTAS + MANOS POR PLATO</title>
+<title>GUSTAVO v3.4.1 - COMANDAS MIXTAS + MANOS POR PLATO</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -34,7 +34,7 @@ select,input{width:100%;background:#0e0e0e;border:1px solid #333;color:#fff;padd
 </head>
 <body>
 <div class="header">
-  <h1>🔥 GUSTAVO v3.4 - COMANDAS MIXTAS</h1>
+  <h1>🔥 GUSTAVO v3.4.1 - COMANDAS MIXTAS</h1>
   <div class="badges">
     <span class="badge red" id="bFirebase">Conectando...</span>
     <span class="badge" id="reloj">--:--</span>
@@ -130,7 +130,7 @@ const firebaseConfig={
 if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
 firebase.database().goOnline();
 const db=firebase.database();
-const APP_VERSION='3.4';
+const APP_VERSION='3.4.1';
 const MOTOR_PRODUCCION='COMPONENTES_MIXTOS';
 
 const MESAS=['Salón - Mesa 1','Salón - Mesa 2','Salón - Mesa 3','Salón - Mesa 4','Vereda - Mesa 5','Vereda - Mesa 6','Vereda - Mesa 7','Canal - Mostrador','Canal - Delivery','Canal - Pickup','Canal - WhatsApp'];
@@ -260,10 +260,14 @@ function getTipo(items){
   if(p&&c)return'MIXTA'; if(p)return'PARRILLA'; return'COCINA';
 }
 function getEstadoSector(it,sector){
+  const prod=resolverProduccion(getNombre(it),it?.cat||'');
+  if(!prod.sectoresRequeridos.includes(sector))return'NO_REQUERIDO';
+
   const guardado=it?.sectores?.[sector.toLowerCase()]?.estado;
   if(guardado)return guardado.toUpperCase();
-  const prod=resolverProduccion(getNombre(it),it?.cat||'');
-  if(!prod.sincronizar && getEstadoItem(it)==='ENTREGADO_SECTOR' && prod.sectoresRequeridos.includes(sector))return'MANOS';
+
+  if(!prod.sincronizar && getEstadoItem(it)==='ENTREGADO_SECTOR')return'MANOS';
+  if(getEstadoItem(it)==='MANOS_EN_MESA')return'MANOS';
   return'PENDIENTE';
 }
 function estadoPlatoCalculado(it){
@@ -305,7 +309,7 @@ function htmlItemParrilla(it,idx,conBoton=false){
     return `<div class="comanda-linea">
       <div><span class="propio">${cant}x ${getNombre(it)}</span>
       <span class="estado-sector ${ep==='MANOS'?'manos':'espera'}">PARRILLA: ${ep}</span></div>
-      ${conBoton && ep!=='MANOS' && getEstadoItem(it)!=='MANOS_EN_MESA'?`<button class="item-btn" onclick="marcarItemManosParrilla(${idx})">🖐️ MANOS</button>`:''}
+      ${conBoton && ep!=='MANOS'?`<button class="item-btn" onclick="marcarItemManosParrilla(${idx})">🖐️ MARCAR LISTO / MANOS</button>`:''}
     </div>`;
   }
 
@@ -323,7 +327,7 @@ function htmlItemParrilla(it,idx,conBoton=false){
       <span class="estado-sector ${plato==='MANOS'?'manos':'espera'}">PLATO: ${plato}</span>
     </div>
     ${espera}
-    ${conBoton && ep!=='MANOS' && getEstadoItem(it)!=='MANOS_EN_MESA'?`<button class="item-btn" onclick="marcarItemManosParrilla(${idx})">🖐️ MANOS PARRILLA</button>`:''}
+    ${conBoton && ep!=='MANOS'?`<button class="item-btn" onclick="marcarItemManosParrilla(${idx})">🖐️ MARCAR PARRILLA LISTA / MANOS</button>`:''}
   </div>`;
 }
 
@@ -516,7 +520,7 @@ async function marcarItemManosParrilla(idx){
     await db.ref('mensajes_chat').push({remitente:'Gustavo',texto:`⏳ ${key} - ${getNombre(itemFB)}: PARRILLA EN MANOS / ESPERANDO COCINA`,hora:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),timestamp:ahora});
   }else{
     updates.estadoPlato='MANOS';
-    updates.estadoItem='ENTREGADO_SECTOR';
+    updates.estadoItem=getEstadoItem(itemFB)==='MANOS_EN_MESA'?'MANOS_EN_MESA':'ENTREGADO_SECTOR';
     updates.fechaEntregadoSector=ahora;
     await ref.update(updates);
     await db.ref('mensajes_chat').push({remitente:'Gustavo',texto:prod.sincronizar?`✋ ${key} - ${getNombre(itemFB)} PLATO MIXTO COMPLETO EN MANOS`:`✋ ${key} - ${getNombre(itemFB)} PARRILLA EN MANOS`,hora:new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}),timestamp:ahora});
@@ -553,7 +557,11 @@ async function marcarItemManosParrillaSinAbrir(key,idx){
   const estadoCocina=(itemFB?.sectores?.cocina?.estado||'PENDIENTE').toUpperCase();
 
   if(prod.sincronizar&&estadoCocina!=='MANOS')updates.estadoPlato='ESPERANDO_COCINA';
-  else{updates.estadoPlato='MANOS';updates.estadoItem='ENTREGADO_SECTOR';updates.fechaEntregadoSector=ahora;}
+  else{
+    updates.estadoPlato='MANOS';
+    updates.estadoItem=getEstadoItem(itemFB)==='MANOS_EN_MESA'?'MANOS_EN_MESA':'ENTREGADO_SECTOR';
+    updates.fechaEntregadoSector=ahora;
+  }
   await ref.update(updates);
 }
 
