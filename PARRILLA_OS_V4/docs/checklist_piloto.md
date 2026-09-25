@@ -1,0 +1,15 @@
+# Checklist piloto V4
+- [ ] Migrar 93 productos.
+- [ ] QR Mesa 3 abre carta dinámica manteniendo `?mesa=Salon_Mesa_3`.
+- [ ] Choripán -> Parrilla.
+- [ ] Morcipán -> Parrilla.
+- [ ] Bondiola sándwich -> Parrilla.
+- [ ] Bondiola c/fritas -> Mixta.
+- [ ] Milanesa c/fritas -> Cocina.
+- [ ] Plato mixto espera ambos sectores.
+- [ ] Mozo marca platos individualmente en mesa.
+- [ ] Caja discrimina 5 medios de pago.
+- [ ] Gasto/Pago/Compra visible desde Caja.
+- [ ] Cierre Z conciliado.
+- [ ] Pickup/Delivery/Mostrador sólo se liberan tras producción + cobro.
+- [ ] Auth y reglas probadas en rama de prueba antes de desactivar bypass.

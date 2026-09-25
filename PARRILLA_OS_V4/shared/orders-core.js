@@ -1,0 +1,16 @@
+(function(g){
+ const P=g.POSProduction,U=g.POS.utils;
+ function ordersPath(localId){return g.POS.paths.path(localId,'orders');}
+ async function create(localId,data){
+  localId=localId||g.POS.config.defaultLocalId;const now=Date.now();const items=(data.items||[]).map(i=>i.tipoProduccion?i:P.prepare(i.producto||i,i.cantidad||1));
+  const order={id:data.id||String(now),nroOrden:data.nroOrden||String(now),localId,mesa:data.mesa||'',mesaBase:data.mesaBase||data.mesa||'',canal:data.canal||'SALON',cliente:data.cliente||'',direccion:data.direccion||'',telefono:data.telefono||'',observaciones:data.observaciones||'',items,total:items.reduce((a,i)=>a+i.precio*i.cantidad,0),estado:'RECIBIDO',estado_mozo:'RECIBIDO',estado_parrilla:items.some(i=>P.resolve(i.nombre,i.categoria).sectoresRequeridos.includes('PARRILLA'))?'RECIBIDO':'NO_REQUERIDO',estado_cocina:items.some(i=>P.resolve(i.nombre,i.categoria).sectoresRequeridos.includes('COCINA'))?'RECIBIDO':'NO_REQUERIDO',timestamp:now,timestamp_estado:now,schemaVersion:'4.0',motorProduccion:'COMPONENTES_MIXTOS'};
+  const path=ordersPath(localId); let key;
+  if(g.POS.config.legacyPilot&&localId===g.POS.config.defaultLocalId){key=(order.canal==='SALON'||order.mesa.startsWith('Salón')||order.mesa.startsWith('Vereda')||order.mesa.startsWith('Canal -'))?order.mesa:order.id;await g.POS.db.ref(`${path}/${key}`).set(order);}else{const ref=g.POS.db.ref(path).push();key=ref.key;order.firebaseKey=key;await ref.set(order);}await g.POS.audit?.log(localId,'CREAR_PEDIDO','PEDIDOS',{key,mesa:order.mesa,total:order.total});return{key,order};
+ }
+ function subscribe(localId,cb){return g.POS.db.ref(ordersPath(localId)).on('value',s=>cb(s.val()||{}));}
+ async function setSectorState(localId,key,itemIndex,sector,state){const base=`${ordersPath(localId)}/${key}/items/${itemIndex}`;await g.POS.db.ref(`${base}/sectores/${sector.toLowerCase()}`).update({requerido:true,estado:state,timestamp:Date.now()});const s=await g.POS.db.ref(base).once('value');const it=s.val();const plate=P.plateState(it);const upd={estadoPlato:plate};if(plate==='MANOS')Object.assign(upd,{estadoItem:'ENTREGADO_SECTOR',fechaEntregadoSector:Date.now()});await g.POS.db.ref(base).update(upd);return plate;}
+ async function markOnTable(localId,key,itemIndex){const base=`${ordersPath(localId)}/${key}/items/${itemIndex}`;const s=await g.POS.db.ref(base).once('value');const it=s.val();if(!it||!['MANOS','ENTREGADO_SECTOR'].includes(P.plateState(it))&&(it.estadoItem!=='ENTREGADO_SECTOR'))throw new Error('Plato todavía no listo');return g.POS.db.ref(base).update({estadoItem:'MANOS_EN_MESA',estadoPlato:'MANOS_EN_MESA',fechaManos:Date.now()});}
+ async function updateOrder(localId,key,data){return g.POS.db.ref(`${ordersPath(localId)}/${key}`).update({...data,timestamp_estado:Date.now()});}
+ async function release(localId,key){const ref=g.POS.db.ref(`${ordersPath(localId)}/${key}`);const s=await ref.once('value'),o=s.val();if(!o)throw new Error('Comanda inexistente');await g.POS.db.ref(`${g.POS.paths.path(localId,'cash')}/archivo_pedidos`).push({...o,estado:'LIBERADA',liberadaEn:Date.now()});await ref.remove();await g.POS.audit?.log(localId,'LIBERAR_PEDIDO','PEDIDOS',{key,canal:o.canal,mesa:o.mesa});}
+ g.POS={...(g.POS||{}),orders:{ordersPath,create,subscribe,setSectorState,markOnTable,updateOrder,release}};
+})(window);

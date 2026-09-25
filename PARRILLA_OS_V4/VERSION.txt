@@ -1,0 +1,2 @@
+PARRILLA OS v4.0.0-dev
+Build: 2026-09-25

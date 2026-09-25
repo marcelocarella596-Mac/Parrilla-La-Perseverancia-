@@ -1,0 +1,4 @@
+const assert=require('assert');const P=require('../shared/production-core.js');
+function is(name,type,parts){const r=P.resolve(name,'');assert.equal(r.tipo,type,name);if(parts)assert.deepEqual(r.componentes.map(x=>[x.nombre,x.estacion]),parts);}
+is('Choripán','PARRILLA');is('Morcipán','PARRILLA');is('Bondiola sándwich','PARRILLA');is('Milanesa c/fritas','COCINA');is('Suprema c/fritas','COCINA');is('Asado c/fritas','MIXTA',[['Asado','PARRILLA'],['Fritas','COCINA']]);is('Vacío c/fritas','MIXTA',[['Vacío','PARRILLA'],['Fritas','COCINA']]);is('Bondiola c/fritas','MIXTA',[['Bondiola','PARRILLA'],['Fritas','COCINA']]);
+let x=P.prepare({nombre:'Asado c/fritas',precio:1,categoria:'sandwich'},1);x.sectores.parrilla.estado='MANOS';assert.equal(P.plateState(x),'ESPERANDO_COCINA');x.sectores.cocina.estado='MANOS';assert.equal(P.plateState(x),'MANOS');console.log('production-core: OK');

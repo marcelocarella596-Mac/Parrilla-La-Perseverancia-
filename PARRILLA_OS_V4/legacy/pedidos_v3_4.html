@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>La Perseverancia - Pedidos v3.4 Componentes Mixtos</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,-apple-system,sans-serif}
+body{background:#080808;color:#fff;max-width:500px;margin:0 auto;padding-bottom:95px}
+.banner{width:100%;height:190px;background:#111;position:relative;overflow:hidden}
+.banner img{width:100%;height:100%;object-fit:cover;display:block}
+.tabs{display:flex;gap:6px;padding:10px 12px;overflow-x:auto;background:#080808;position:sticky;top:0;z-index:10;border-bottom:1px solid #1a1a1a}
+.tab{padding:7px 14px;border-radius:20px;background:#151515;color:#666;font-size:10px;font-weight:800;white-space:nowrap;border:1px solid #222;cursor:pointer}
+.tab.active{background:#fff;color:#000}
+.carrusel-wrap{margin:12px;background:#141414;border:1px solid #222;border-radius:14px;padding:10px}
+.carrusel{display:flex;gap:10px;overflow-x:auto}
+.slide{min-width:156px;background:#1c1c1c;border:1px solid #2a2a2a;border-radius:11px;overflow:hidden;cursor:pointer}
+.slide-img{height:96px;background:#222;position:relative}
+.slide-img img{width:100%;height:100%;object-fit:cover}
+.real-tag{position:absolute;bottom:4px;left:4px;background:#ffcc00;color:#000;font-size:7px;font-weight:900;padding:2px 6px;border-radius:4px}
+.slide-info{padding:8px}
+.slide-info b{font-size:11px;display:block;color:#fff}
+.grid{padding:8px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.card{background:#1c1c1c;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;height:162px;position:relative}
+.card-img{width:100%;height:90px;background:#222;position:relative;display:flex;align-items:center;justify-content:center}
+.card-img img{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.badge{position:absolute;top:6px;right:6px;background:#ffcc00;color:#000;font-size:8px;font-weight:900;padding:3px 7px;border-radius:12px;z-index:3}
+.card-info{padding:7px 8px}
+.card-name{font-size:10.5px;font-weight:800;min-height:26px;color:#fff}
+.card-bottom{display:flex;justify-content:space-between;margin-top:4px}
+.cartbar{position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #222;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;max-width:500px;margin:0 auto;z-index:20}
+#modal{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
+.box{background:#1a1a1a;width:100%;max-width:370px;border-radius:16px;padding:18px;border:1px solid #2a2a2a}
+.box input,.box select,.box textarea{width:100%;padding:12px;margin:5px 0;border-radius:10px;border:1px solid #333;background:#0c0c0c;color:#fff}
+.sum{background:#0c0c0c;border:1px solid #222;border-radius:10px;padding:10px;margin:8px 0;font-size:11px;max-height:110px;overflow:auto}
+.btns{display:flex;gap:8px;margin-top:12px}
+.btns button{flex:1;padding:12px;border:none;border-radius:10px;font-weight:900;font-size:12px;cursor:pointer}
+.alias{background:#ffcc00;color:#000;border-radius:10px;padding:12px;text-align:center;margin:10px 0;display:none}
+</style>
+</head>
+<body>
+<div class="banner"><img src="parrilla_banner.jpeg" onerror="this.src='https://images.unsplash.com/photo-1544025162-d76694265947?w=600'"></div>
+<div class="carrusel-wrap"><div class="carrusel" id="carrusel"></div></div>
+<div class="tabs" id="tabs"></div>
+<div class="grid" id="grid"></div>
+<div class="cartbar" id="cartbar" style="display:none"><div><div id="cTot" style="font-size:10px;color:#888">0 items</div><b id="pTot">$0</b></div><button onclick="openM()" style="background:#25D366;color:#fff;border:none;padding:11px 18px;border-radius:11px;font-weight:900">PEDIR</button></div>
+<div id="modal"><div class="box">
+<h3 style="text-align:center;font-size:14px;margin-bottom:10px">Finalizar pedido</h3>
+<div class="sum" id="sum"></div>
+<input id="nom" placeholder="Nombre *"><input id="dir" placeholder="Dirección *"><input id="tel" placeholder="Tel (opcional)">
+<select id="pago" onchange="checkPago()"><option>Efectivo</option><option>Transferencia</option><option>Mercado Pago</option></select>
+<div class="alias" id="aliasBox"><b>ALIAS</b><br><span onclick="navigator.clipboard.writeText('Av.argentina')">Av.argentina</span></div>
+<textarea id="obs" rows="2" placeholder="Observaciones"></textarea>
+<div class="btns"><button onclick="closeM()" style="background:#2a2a2a;color:#fff">Cancelar</button><button onclick="send()" style="background:#25D366;color:#fff">Enviar a cocina</button></div>
+</div></div>
+<script>
+const firebaseConfig={apiKey:"AIzaSyAvrpQSDoq9S87j3J7V4-uhJnPFCylCU",authDomain:"parrilla-la-perseveranci-f3f54.firebaseapp.com",databaseURL:"https://parrilla-la-perseveranci-f3f54-default-rtdb.firebaseio.com",projectId:"parrilla-la-perseveranci-f3f54"};
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
+const db=firebase.database();
+const MENU=[
+{n:'Ravioles con Estofado',p:12500,cat:'pasta',img:'imagenes/ravioles_estofado.jpeg', real:true},
+{n:'Tallarines con Albóndigas',p:11500,cat:'pasta',img:'imagenes/tallarines_albondigas.jpeg', real:true},
+{n:'Albóndigas con Puré',p:10500,cat:'minuta',img:'imagenes/albondigas_pure.jpeg', real:true},
+{n:'Costillas a la Riojana',p:14500,cat:'minuta',img:'imagenes/costillas_riojana.jpeg', real:true},
+{n:'Milanesa con Fritas',p:14500,cat:'minuta',img:'imagenes/milanesa_fritas.jpeg', real:true},
+{n:'Churrasco con Papas',p:13500,cat:'minuta',img:'imagenes/churrasco_papas.jpeg', real:true},
+{n:'Asado',p:12000,cat:'parrilla',img:'https://images.unsplash.com/photo-1546964052-d9333490c228?w=400'},
+{n:'Vacío',p:12500,cat:'parrilla',img:'https://images.unsplash.com/photo-1558030006-450066393d65?w=400'},
+{n:'Entraña',p:16000,cat:'parrilla',img:'https://images.unsplash.com/photo-1546964124-0c849213df27?w=400'},
+{n:'Bondiola',p:11000,cat:'parrilla',img:'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400'},
+{n:'Chorizo',p:4000,cat:'parrilla',img:'https://images.unsplash.com/photo-1529193591184-b1d58069ecdd?w=400'},
+{n:'Mollejas',p:11000,cat:'parrilla',img:'https://images.unsplash.com/photo-1544025162-d76694265947?w=400'},
+{n:'Pollo 1/2',p:9000,cat:'parrilla',img:'https://images.unsplash.com/photo-1585328001270-0f0c67c0d06c?w=400'},
+{n:'Parrillada p/2',p:28000,cat:'parrilla',img:'https://images.unsplash.com/photo-1558030006-450066393d65?w=400'},
+{n:'Choripán',p:5000,cat:'sandwich',img:'https://images.unsplash.com/photo-1550547660-d9450f859349?w=400'},
+{n:'Papas Fritas',p:5000,cat:'guarnicion',img:'https://images.unsplash.com/photo-1573080496219-bb080dd4f877?w=400'},
+{n:'Ensalada Mixta',p:6000,cat:'ensalada',img:'https://images.unsplash.com/photo-1512621776952-a57141f2eefd?w=400'},
+{n:'Coca 500ml',p:2500,cat:'bebida',img:'https://images.unsplash.com/photo-1554866585-cd94860890b7?w=400'},
+{n:'Quilmes 1L',p:5000,cat:'cerveza',img:'https://images.unsplash.com/photo-1608270586620-248524c67de9?w=400'},
+{n:'Flan',p:4000,cat:'postre',img:'https://images.unsplash.com/photo-1488477181946-64290103bbd6?w=400'},
+];
+let cart={},cat='todos';
+const CATS=['todos','parrilla','pasta','minuta','sandwich','guarnicion','bebida','postre'];
+function renderTabs(){document.getElementById('tabs').innerHTML=CATS.map(c=>`<div class="tab ${cat===c?'active':''}" onclick="cat='${c}';renderTabs();renderGrid()">${c.toUpperCase()}</div>`).join('');}
+function renderCarrusel(){document.getElementById('carrusel').innerHTML=MENU.filter(m=>m.real).map(m=>`<div class="slide" onclick="add('${m.n}')"><div class="slide-img"><img src="${m.img}"><div class="real-tag">REAL</div></div><div class="slide-info"><b>${m.n}</b><span>$${m.p.toLocaleString()}</span></div></div>`).join('');}
+function renderGrid(){let list=cat==='todos'?MENU:MENU.filter(m=>m.cat===cat);document.getElementById('grid').innerHTML=list.map(m=>{const q=cart[m.n]||0;return `<div class="card" onclick="add('${m.n}')"><div class="card-img"><img src="${m.img}" onerror="this.style.display='none'"><div class="badge" style="display:${q?'block':'none'}">x${q}</div></div><div class="card-info"><div class="card-name">${m.n}</div><div class="card-bottom"><div>$${m.p.toLocaleString()}</div><div>+</div></div></div></div>`}).join('');}
+function add(n){cart[n]=(cart[n]||0)+1;upd();renderGrid();}
+function upd(){let t=0,c=0;for(let k in cart){const p=MENU.find(x=>x.n===k);if(p){t+=p.p*cart[k];c+=cart[k];}}document.getElementById('cTot').innerText=c+' items';document.getElementById('pTot').innerText='$'+t.toLocaleString();document.getElementById('cartbar').style.display=c>0?'flex':'none';}
+function checkPago(){document.getElementById('aliasBox').style.display=(document.getElementById('pago').value!=='Efectivo')?'block':'none';}
+function openM(){if(!Object.keys(cart).length)return alert('Carrito vacío');let h='',t=0;for(let k in cart){const p=MENU.find(x=>x.n===k);if(!p)continue;t+=p.p*cart[k];h+=`${k} x${cart[k]}<br>`}h+=`<br><b>Total $${t.toLocaleString()}</b>`;document.getElementById('sum').innerHTML=h;document.getElementById('modal').style.display='flex';checkPago();}
+function closeM(){document.getElementById('modal').style.display='none';}
+
+
+// ============================================================
+// PARRILLA OS V3.4 - MOTOR DE PRODUCCIÓN PARA PEDIDOS / WHATSAPP
+// Regla: se enruta por PROCESO, no por categoría comercial.
+// ============================================================
+function normProd(s){
+  return (s||'').toString()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
+    .toLowerCase().trim();
+}
+
+const PARRILLA_BASE=[
+  'asado','vacio','bife','entrana','bondiola','chorizo','morcilla',
+  'chinchulin','molleja','matambre','pollo','costillita',
+  'ojo de bife','tira de asado','parrillada','rinon',
+  'choripan','morcipan','provoleta'
+];
+
+const COCINA_PURA=[
+  'milanesa','suprema','pechuga','tortilla','raviol','tallarin',
+  'albondiga','hamburguesa','revuelto','gramajo'
+];
+
+function detectarGuarnicion(n){
+  if(/(?:c\/|con)\s*(?:papas\s*)?fritas?/.test(n) || n.includes('papas fritas')){
+    return {nombre:'Fritas',clave:'FRITAS'};
+  }
+  if(/(?:c\/|con)\s*pure/.test(n)){
+    return {nombre:'Puré',clave:'PURE'};
+  }
+  if(/(?:c\/|con)\s*ensalada/.test(n)){
+    return {nombre:'Ensalada',clave:'ENSALADA'};
+  }
+  if(/(?:c\/|con)\s*papas/.test(n)){
+    return {nombre:'Papas',clave:'PAPAS'};
+  }
+  return null;
+}
+
+function quitarGuarnicion(nombre,g){
+  let t=(nombre||'').trim();
+  if(!g) return t;
+  if(g.clave==='FRITAS'){
+    t=t.replace(/\s+(?:c\/|con)\s*(?:papas\s*)?fritas?/i,'')
+       .replace(/\s+papas\s+fritas/i,'').trim();
+  }else if(g.clave==='PURE'){
+    t=t.replace(/\s+(?:c\/|con)\s*pur[eé]/i,'').trim();
+  }else if(g.clave==='ENSALADA'){
+    t=t.replace(/\s+(?:c\/|con)\s*ensalada.*$/i,'').trim();
+  }else if(g.clave==='PAPAS'){
+    t=t.replace(/\s+(?:c\/|con)\s*papas.*$/i,'').trim();
+  }
+  return t||nombre;
+}
+
+function resolverProduccion(nombre,categoria){
+  const original=(nombre||'').toString().trim();
+  const n=normProd(original);
+  const cat=normProd(categoria||'');
+  const guarnicion=detectarGuarnicion(n);
+
+  // Minutas de cocina tienen prioridad aun cuando incluyan fritas.
+  if(COCINA_PURA.some(k=>n.includes(k))){
+    return {
+      tipo:'COCINA',
+      sincronizar:false,
+      sectoresRequeridos:['COCINA'],
+      componentes:[{nombre:original,estacion:'COCINA'}]
+    };
+  }
+
+  const esParrilla=
+    PARRILLA_BASE.some(k=>n.includes(k)) ||
+    cat==='parrilla';
+
+  if(esParrilla && guarnicion){
+    return {
+      tipo:'MIXTA',
+      sincronizar:true,
+      sectoresRequeridos:['PARRILLA','COCINA'],
+      componentes:[
+        {nombre:quitarGuarnicion(original,guarnicion),estacion:'PARRILLA'},
+        {nombre:guarnicion.nombre,estacion:'COCINA'}
+      ]
+    };
+  }
+
+  if(esParrilla){
+    return {
+      tipo:'PARRILLA',
+      sincronizar:false,
+      sectoresRequeridos:['PARRILLA'],
+      componentes:[{nombre:original,estacion:'PARRILLA'}]
+    };
+  }
+
+  return {
+    tipo:'COCINA',
+    sincronizar:false,
+    sectoresRequeridos:['COCINA'],
+    componentes:[{nombre:original,estacion:'COCINA'}]
+  };
+}
+
+function prepararItemPedido(prod,cantidad){
+  const r=resolverProduccion(prod.n,prod.cat);
+  const ahora=Date.now();
+  const sectores={};
+
+  if(r.sectoresRequeridos.includes('PARRILLA')){
+    sectores.parrilla={requerido:true,estado:'PENDIENTE',timestamp:null};
+  }
+  if(r.sectoresRequeridos.includes('COCINA')){
+    sectores.cocina={requerido:true,estado:'PENDIENTE',timestamp:null};
+  }
+
+  return {
+    itemId:'web_'+ahora+'_'+Math.random().toString(36).slice(2,8),
+    n:prod.n,
+    nombre:prod.n,
+    cantidad:cantidad,
+    p:prod.p,
+    precio:prod.p,
+    cat:prod.cat,
+    tipoProduccion:r.tipo,
+    sincronizar:r.sincronizar,
+    componentes:r.componentes.map((c,i)=>({
+      idComponente:'c'+i,
+      nombre:c.nombre,
+      estacion:c.estacion
+    })),
+    sectores:sectores,
+    estadoPlato:'PENDIENTE',
+    estadoItem:'PENDIENTE',
+    timestampItem:ahora
+  };
+}
+
+function tareasSector(items,sector){
+  const out=[];
+  items.forEach(item=>{
+    (item.componentes||[]).forEach(comp=>{
+      if(comp.estacion===sector){
+        out.push({
+          itemId:item.itemId,
+          padre:item.nombre,
+          nombre:comp.nombre,
+          cantidad:item.cantidad,
+          estacion:sector,
+          estado:'PENDIENTE'
+        });
+      }
+    });
+  });
+  return out;
+}
+
+function send(){
+ const nom=document.getElementById('nom').value.trim();
+ const dir=document.getElementById('dir').value.trim();
+ const tel=document.getElementById('tel').value.trim();
+ const pago=document.getElementById('pago').value;
+ const obs=document.getElementById('obs').value.trim();
+ if(!nom||!dir){alert('Falta nombre y dirección');return;}
+
+ let items=[],tot=0,msg=`*PEDIDO LA PERSEVERANCIA*%0A%0A`;
+ for(let k in cart){
+   const p=MENU.find(x=>x.n===k);
+   if(!p)continue;
+   tot+=p.p*cart[k];
+   msg+=`• ${k} x${cart[k]}%0A`;
+   items.push(prepararItemPedido(p,cart[k]));
+ }
+ msg+=`%0A*Total: $${tot.toLocaleString()}*%0A*Cliente:* ${nom}%0A*Dir:* ${dir}%0A*Pago:* ${pago}${obs?`%0A*Obs:* ${obs}`:''}`;
+
+ const shortId=Date.now().toString();
+ const key=shortId;
+ const requiereParrilla=items.some(i=>(i.componentes||[]).some(c=>c.estacion==='PARRILLA'));
+ const requiereCocina=items.some(i=>(i.componentes||[]).some(c=>c.estacion==='COCINA'));
+
+ const data={
+   id:shortId,
+   nroOrden:shortId,
+   mesa:`WhatsApp ${shortId} - ${nom}`,
+   mesaBase:'WhatsApp',
+   canal:'WhatsApp',
+   cliente:nom,
+   direccion:dir,
+   telefono:tel,
+   pago:pago,
+   observaciones:obs,
+   obs:obs,
+
+   // COMANDA MADRE V3.4
+   items:items,
+
+   // Compatibilidad / vistas auxiliares.
+   itemsParrilla:tareasSector(items,'PARRILLA'),
+   itemsCocina:tareasSector(items,'COCINA'),
+
+   total:tot,
+   total_cobrado:tot,
+
+   estado:'RECIBIDO',
+   estado_mozo:'RECIBIDO',
+   estado_parrilla:requiereParrilla?'RECIBIDO':'NO_REQUERIDO',
+   estado_cocina:requiereCocina?'RECIBIDO':'NO_REQUERIDO',
+
+   roles:['Mozo','Parrilla','Cocina'],
+   para:{
+     Mozo:true,
+     Parrilla:requiereParrilla,
+     Cocina:requiereCocina
+   },
+
+   schemaVersion:'3.4',
+   motorProduccion:'COMPONENTES_MIXTOS',
+   emisor:'Web',
+   hora:new Date().toLocaleTimeString().slice(0,5),
+   timestamp:Date.now(),
+   timestamp_estado:Date.now()
+ };
+
+ // Mantiene el comportamiento actual: abre WhatsApp y registra la comanda.
+ window.open(`https://wa.me/5491161698041?text=${msg}`,'_blank');
+
+ db.ref('comandas_activas/'+key).set(data).then(()=>{
+   db.ref('mensajes').push({
+     texto:`🟢 NUEVO ${shortId} - ${nom} $${tot.toLocaleString()} [V3.4]`,
+     hora:data.hora,
+     ts:Date.now()
+   });
+   db.ref('mensajes_chat').push({
+     remitente:'Web',
+     texto:`📱 ${data.mesa}: ${items.map(i=>`${i.cantidad}x ${i.nombre} [${i.tipoProduccion}]`).join(', ')}`,
+     hora:data.hora,
+     timestamp:Date.now()
+   });
+
+   alert('✅ Pedido enviado al sistema');
+   cart={};
+   upd();
+   renderGrid();
+   closeM();
+ }).catch(e=>{
+   alert('WhatsApp abierto, pero Firebase informó: '+e.message);
+ });
+}
+renderTabs();renderCarrusel();renderGrid();
+</script>
+</body>
+</html>

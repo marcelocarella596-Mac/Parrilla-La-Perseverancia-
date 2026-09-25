@@ -1,0 +1,5 @@
+{
+  "hosting":{"public":"..","ignore":["firebase.json","**/.*","**/node_modules/**","legacy/**","tests/**"]},
+  "functions":{"source":"functions"},
+  "database":{"rules":"database.rules.v4.template.json"}
+}

@@ -1,0 +1,22 @@
+{
+  "rules": {
+    "parrillaOS": {
+      "locales": {
+        "$localId": {
+          ".read": "auth != null && (auth.token.super_admin == true || auth.token.local_id == $localId)",
+          ".write": "auth != null && (auth.token.super_admin == true || (auth.token.local_id == $localId && auth.token.rol == 'ADMIN_LOCAL'))"
+        }
+      },
+      "userProfiles": {
+        "$uid": {
+          ".read": "auth != null && (auth.uid == $uid || auth.token.super_admin == true)",
+          ".write": "auth != null && auth.token.super_admin == true"
+        }
+      },
+      "audit": {
+        ".read": "auth != null && auth.token.super_admin == true",
+        ".write": "auth != null"
+      }
+    }
+  }
+}
