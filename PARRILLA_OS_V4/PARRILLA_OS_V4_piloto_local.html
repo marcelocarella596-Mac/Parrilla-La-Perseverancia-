@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PARRILLA OS V4 - Piloto local</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-functions-compat.js"></script>
+<link rel="stylesheet" href="shared/app.css">
+<style>
+body{background:#0d0d0d;color:#fff;font-family:Segoe UI,Arial,sans-serif;margin:0}
+header{background:#7f1d1d;padding:14px 18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.container{max-width:1050px;margin:auto;padding:16px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.panel{background:#171717;border:1px solid #333;border-radius:12px;padding:14px;margin-bottom:14px}.ok{color:#2ecc71}.warn{color:#f1c40f}.bad{color:#e74c3c}.muted{color:#aaa}
+.btn{display:inline-block;border:0;border-radius:8px;padding:10px 13px;margin:4px 4px 4px 0;background:#333;color:#fff;font-weight:800;cursor:pointer;text-decoration:none}.btn.primary{background:#f1c40f;color:#111}.btn.green{background:#196f3d}.btn.blue{background:#1f618d}
+pre{white-space:pre-wrap;background:#090909;border:1px solid #282828;padding:10px;border-radius:8px;max-height:320px;overflow:auto}.kpi{font-size:28px;font-weight:900;color:#f1c40f}code{color:#f8c471}
+</style>
+</head>
+<body>
+<header><div><b>🔥 PARRILLA OS V4</b> <span class="muted">| PILOTO LOCAL SEGURO</span></div><div id="estadoConexion" class="warn">● comprobando Firebase...</div></header>
+<div class="container">
+  <div class="panel"><h2>Preflight del piloto</h2><p>Esta pantalla <b>NO escribe ni borra datos</b>. Solo verifica conexión, rutas legacy y estructura V4 antes de ejecutar la migración.</p><button class="btn primary" onclick="runPreflight()">EJECUTAR PREFLIGHT</button><a class="btn green" href="tools/migrar_piloto_v4.html">ABRIR MIGRADOR V4</a><a class="btn blue" href="cliente/menu.html?mesa=Salon_Mesa_3">PROBAR CARTA V4 · MESA 3</a></div>
+  <div class="grid"><div class="panel"><div class="muted">Proyecto Firebase</div><div id="proyecto" class="kpi" style="font-size:16px">-</div></div><div class="panel"><div class="muted">Comandas legacy</div><div id="kComandas" class="kpi">-</div></div><div class="panel"><div class="muted">Agotados legacy</div><div id="kAgotados" class="kpi">-</div></div><div class="panel"><div class="muted">Productos V4</div><div id="kProductos" class="kpi">-</div></div></div>
+  <div class="panel"><h3>Rutas verificadas</h3><pre id="rutas">Esperando preflight...</pre></div>
+  <div class="panel"><h3>Pruebas motor de producción</h3><pre id="motor">Esperando preflight...</pre></div>
+  <div class="panel"><h3>Resultado</h3><pre id="resultado">Todavía no ejecutado.</pre></div>
+</div>
+<script src="shared/config.js"></script><script src="shared/firebase.js"></script><script src="shared/utils.js"></script><script src="shared/paths.js"></script><script src="shared/permissions.js"></script><script src="shared/auth.js"></script><script src="shared/audit.js"></script><script src="shared/production-core.js"></script><script src="shared/orders-core.js"></script><script src="shared/cash-core.js"></script><script src="shared/menu-core.js"></script>
+<script>
+const $=id=>document.getElementById(id);function countObj(v){return Object.keys(v||{}).length}function line(name,path,count,status='OK'){return `${status==='OK'?'✅':'⚠️'} ${name}\n   ${path}\n   registros: ${count}\n`}
+$('proyecto').textContent=POS.config.firebase.projectId;POS.db.ref('.info/connected').on('value',s=>{const ok=!!s.val();$('estadoConexion').textContent=ok?'● Firebase conectado':'● Firebase desconectado';$('estadoConexion').className=ok?'ok':'bad';});
+async function readSafe(path){try{const s=await POS.db.ref(path).once('value');return {ok:true,val:s.val()||{}}}catch(e){return {ok:false,val:{},error:e}}}
+function testMotor(){const tests=[['Choripán','PARRILLA'],['Morcipán','PARRILLA'],['Bondiola sándwich','PARRILLA'],['Milanesa c/fritas','COCINA'],['Suprema c/fritas','COCINA'],['Asado c/fritas','MIXTA'],['Vacío c/fritas','MIXTA'],['Bondiola c/fritas','MIXTA']];return tests.map(([n,exp])=>{try{const r=POSProduction.resolve(n,'');const got=r.tipo;return `${got===exp?'✅':'❌'} ${n} → ${got} (esperado ${exp})`}catch(e){return `❌ ${n} → ERROR ${e.message||e}`}}).join('\n')}
+async function runPreflight(){
+ $('resultado').textContent='Ejecutando...';const lid=POS.config.defaultLocalId;const legacy={comandas:'comandas_activas',agotados:'platos_agotados',ventas:'ventas',propinas:'propinas_dia',movimientos:'caja_movimientos',historial:'historial_caja'};const v4Menu=`${POS.config.dataRoot}/locales/${lid}/menu/productos`;
+ const [c,a,v,p,m,h,menu]=await Promise.all([readSafe(legacy.comandas),readSafe(legacy.agotados),readSafe(legacy.ventas),readSafe(legacy.propinas),readSafe(legacy.movimientos),readSafe(legacy.historial),readSafe(v4Menu)]);
+ $('kComandas').textContent=c.ok?countObj(c.val):'ERR';$('kAgotados').textContent=a.ok?countObj(a.val):'ERR';$('kProductos').textContent=menu.ok?countObj(menu.val):'ERR';let txt='';txt+=line('Comandas legacy',legacy.comandas,countObj(c.val),c.ok?'OK':'WARN');txt+=line('Agotados legacy',legacy.agotados,countObj(a.val),a.ok?'OK':'WARN');txt+=line('Ventas legacy',legacy.ventas,countObj(v.val),v.ok?'OK':'WARN');txt+=line('Propinas legacy',legacy.propinas,countObj(p.val),p.ok?'OK':'WARN');txt+=line('Movimientos caja legacy',legacy.movimientos,countObj(m.val),m.ok?'OK':'WARN');txt+=line('Historial caja legacy',legacy.historial,countObj(h.val),h.ok?'OK':'WARN');txt+=line('Productos V4',v4Menu,countObj(menu.val),menu.ok?'OK':'WARN');$('rutas').textContent=txt;$('motor').textContent=testMotor();
+ const readErrors=[c,a,v,p,m,h,menu].filter(x=>!x.ok).length;const configOk=POS.config.firebase.projectId==='parrilla-la-perseveranci-f3f54';let res='';res+=configOk?'✅ Firebase piloto coincide con los módulos operativos actuales.\n':'❌ Firebase config no coincide con el piloto actual.\n';res+='✅ Contrato QR conservado: cliente/menu.html?mesa=Salon_Mesa_3\n';res+='✅ El preflight no escribió datos.\n';res+=menu.ok&&countObj(menu.val)>=93?'✅ Menú V4 ya parece migrado (93+ productos).\n':'ℹ️ Menú V4 todavía no migrado o tiene menos de 93 productos.\n';res+=readErrors===0?'✅ Todas las rutas consultadas respondieron.\n':`⚠️ ${readErrors} rutas no pudieron leerse; revisar reglas/permisos antes de migrar.\n`;res+='\nSIGUIENTE PASO:\n';res+=(configOk&&readErrors===0)?'Puede abrirse el migrador V4. La migración crea/actualiza la estructura V4 y no elimina los nodos legacy.':'NO ejecutar migración todavía.';$('resultado').textContent=res;
+}
+runPreflight();
+</script>
+</body>
+</html>
