@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GUSTAVO v3.4.1 - COMANDAS MIXTAS + MANOS POR PLATO</title>
+<title>GUSTAVO v3.4.2 - CAJA + RUTAS PARRILLA</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -34,13 +34,14 @@ select,input{width:100%;background:#0e0e0e;border:1px solid #333;color:#fff;padd
 </head>
 <body>
 <div class="header">
-  <h1>🔥 GUSTAVO v3.4.1 - COMANDAS MIXTAS</h1>
+  <h1>🔥 GUSTAVO v3.4.2 - COMANDAS + CAJA</h1>
   <div class="badges">
     <span class="badge red" id="bFirebase">Conectando...</span>
     <span class="badge" id="reloj">--:--</span>
     <span class="badge green" id="bAct">Activas: 0</span>
     <span class="badge yellow" id="bMix">Mixtas: 0</span>
     <span class="badge" style="color:#fff;border-color:#fff;background:#222" id="bSonido" onclick="toggleSonido()">🔔 SONIDO ON</span>
+    <span class="badge yellow" style="cursor:pointer" onclick="abrirCaja()">💰 CAJA</span>
     <span class="badge blue" onclick="toggleQR()">📱 QR MENU</span>
   </div>
 </div>
@@ -99,6 +100,15 @@ select,input{width:100%;background:#0e0e0e;border:1px solid #333;color:#fff;padd
   </div>
 </div>
 
+<div class="modal" id="modalCaja">
+  <div class="modalBox" style="max-width:680px">
+    <h3 style="color:#f1c40f">💰 CAJA OPERATIVA - GUSTAVO</h3>
+    <div id="gCajaResumen" style="background:#111;border:1px solid #333;border-radius:8px;padding:10px;margin:10px 0;font-size:12px"></div>
+    <div id="gCajaLista" style="max-height:380px;overflow:auto;background:#0d0d0d;border-radius:8px;padding:8px;font-size:11px"></div>
+    <button class="btn-sec" style="margin-top:10px" onclick="document.getElementById('modalCaja').style.display='none'">CERRAR</button>
+  </div>
+</div>
+
 <div class="modal" id="modalMesa">
   <div class="modalBox">
     <h3 id="mTitulo" style="color:#ff9900">MESA</h3>
@@ -130,7 +140,7 @@ const firebaseConfig={
 if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
 firebase.database().goOnline();
 const db=firebase.database();
-const APP_VERSION='3.4.1';
+const APP_VERSION='3.4.2';
 const MOTOR_PRODUCCION='COMPONENTES_MIXTOS';
 
 const MESAS=['Salón - Mesa 1','Salón - Mesa 2','Salón - Mesa 3','Salón - Mesa 4','Vereda - Mesa 5','Vereda - Mesa 6','Vereda - Mesa 7','Canal - Mostrador','Canal - Delivery','Canal - Pickup','Canal - WhatsApp'];
@@ -229,10 +239,8 @@ function resolverProduccion(nom,cat=''){
   if(COCINA_PURA.some(k=>n.includes(k))){
     return {producto:original,tipo:'COCINA',sincronizar:false,partes:[{texto:original,estacion:'COCINA'}],sectoresRequeridos:['COCINA']};
   }
-  if(n.includes('choripan') || n.includes('morcipan')){
-    return {producto:original,tipo:'PARRILLA',sincronizar:false,partes:[{texto:original,estacion:'PARRILLA'}],sectoresRequeridos:['PARRILLA']};
-  }
-
+  // Regla maestra: Choripán, Morcipán y Bondiola (al plato o sándwich)
+  // son de PARRILLA. Si llevan guarnición de Cocina, el plato se vuelve MIXTO.
   const esParrilla=PARRILLA_BASE.some(k=>n.includes(k)) || c==='parrilla';
   const guarnicion=detectarGuarnicionCocina(n);
 
@@ -573,16 +581,76 @@ function setEstadoParrilla(nuevo){
   db.ref('mensajes').push({emisor:'Gustavo',texto:`🔥 ${key} PARRILLA -> ${nuevo}`,hora:new Date().toLocaleTimeString().slice(0,5),ts:Date.now(),destino:'todos'});
 }
 
-function cobrar(nom){
+function esHoyCaja(ts){
+  if(!ts)return false;
+  const d=new Date(ts),h=new Date();
+  return d.getFullYear()===h.getFullYear()&&d.getMonth()===h.getMonth()&&d.getDate()===h.getDate();
+}
+function dineroCaja(n){return '$'+Number(n||0).toLocaleString('es-AR');}
+function medioNormalizado(v){
+  const n=norm(v||'');
+  if(n.includes('efect'))return'EFECTIVO';
+  if(n.includes('transfer'))return'TRANSFERENCIA';
+  if(n.includes('mercado')||n==='mp')return'MERCADO_PAGO';
+  if(n.includes('tarjet'))return'TARJETA';
+  return (v||'SIN_DATOS').toString().toUpperCase();
+}
+function pedirMedioCobro(){
+  const r=prompt('MEDIO DE COBRO\n1 = Efectivo\n2 = Transferencia\n3 = Mercado Pago\n4 = Tarjeta','1');
+  if(r===null)return null;
+  return ({'1':'EFECTIVO','2':'TRANSFERENCIA','3':'MERCADO_PAGO','4':'TARJETA'})[r.trim()]||medioNormalizado(r);
+}
+function claveSeguraCaja(v){return String(v||Date.now()).replace(/[.#$\[\]\/]/g,'_');}
+async function abrirCaja(){
+  const [sv,sp,sm]=await Promise.all([
+    db.ref('ventas').limitToLast(1000).once('value'),
+    db.ref('propinas_dia').limitToLast(500).once('value'),
+    db.ref('caja_movimientos').limitToLast(500).once('value')
+  ]);
+  const ventas=Object.values(sv.val()||{}).filter(v=>esHoyCaja(v.cobradaEn||v.timestamp));
+  const props=Object.values(sp.val()||{}).filter(p=>esHoyCaja(p.timestamp));
+  const movs=Object.values(sm.val()||{}).filter(m=>esHoyCaja(m.timestamp));
+  const totalVentas=ventas.reduce((a,v)=>a+Number(v.total_cobrado||v.total||0),0);
+  const propinas=props.reduce((a,p)=>a+Number(p.monto||0),0);
+  const egresos=movs.filter(m=>m.tipo==='EGRESO').reduce((a,m)=>a+Number(m.monto||0),0);
+  const efectivoVentas=ventas.filter(v=>medioNormalizado(v.medio_pago||v.pago)==='EFECTIVO').reduce((a,v)=>a+Number(v.total_cobrado||v.total||0),0);
+  const efectivoEgresos=movs.filter(m=>m.tipo==='EGRESO'&&medioNormalizado(m.medio_pago)==='EFECTIVO').reduce((a,m)=>a+Number(m.monto||0),0);
+  const efectivoExtra=movs.filter(m=>m.tipo==='INGRESO'&&m.categoria!=='VENTA'&&medioNormalizado(m.medio_pago)==='EFECTIVO').reduce((a,m)=>a+Number(m.monto||0),0);
+  document.getElementById('gCajaResumen').innerHTML=`<b style="color:#2ecc71">VENTAS HOY ${dineroCaja(totalVentas)}</b><br>Propinas: ${dineroCaja(propinas)} | Egresos: <span style="color:#e74c3c">${dineroCaja(egresos)}</span><br><b style="color:#f1c40f">EFECTIVO OPERATIVO: ${dineroCaja(efectivoVentas+efectivoExtra-efectivoEgresos)}</b><br><small style="color:#888">Hernán registra compras/pagos; Gustavo registra cobros. Ambos consultan la misma caja.</small>`;
+  let h='';
+  movs.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0)).slice(0,40).forEach(m=>{
+    const color=m.tipo==='EGRESO'?'#e74c3c':'#2ecc71';
+    h+=`<div style="padding:7px;border-bottom:1px solid #222"><b style="color:${color}">${m.tipo==='EGRESO'?'-':'+'}${dineroCaja(m.monto)}</b> ${m.categoria||m.tipo} - ${m.concepto||m.mesa||''}<br><small style="color:#777">${m.usuario||m.origen||''} | ${m.medio_pago||''}</small></div>`;
+  });
+  document.getElementById('gCajaLista').innerHTML=h||'Sin movimientos manuales hoy';
+  document.getElementById('modalCaja').style.display='flex';
+}
+
+async function cobrar(nom){
   const cmd=comandas[nom];if(!cmd)return alert('Sin comanda');
-  const totalFijo=cmd.total_cobrado||cmd.total||0;
-  const propStr=prompt(`COBRAR ${nom}\n\nTotal FIJO: $${totalFijo.toLocaleString()}\n\nSolo ingresá PROPINA:`,cmd.propina||0);
+  if(String(cmd.estado||'').toUpperCase()==='COBRADA')return alert('Esta comanda ya está COBRADA');
+  const totalFijo=Number(cmd.total_cobrado||cmd.total||0);
+  const medio=pedirMedioCobro();if(!medio)return;
+  const propStr=prompt(`COBRAR ${nom}\n\nTotal FIJO: $${totalFijo.toLocaleString()}\nMedio: ${medio}\n\nSolo ingresá PROPINA:`,cmd.propina||0);
   if(propStr===null)return;
-  const prop=parseInt(propStr||0,10);
-  db.ref('comandas_activas/'+nom).update({estado:'COBRADA',total_cobrado:totalFijo,propina:prop,timestamp_estado:Date.now()});
-  if(prop>0)db.ref('propinas_dia').push({mesa:nom,monto:prop,timestamp:Date.now(),cajero:'Gustavo'});
-  db.ref('ventas').push({...cmd,cobradaEn:Date.now(),cobradaPor:'Gustavo',total_cobrado:totalFijo,propina:prop});
-  db.ref('mensajes').push({emisor:'Gustavo',texto:`✅ ${nom} COBRADA $${totalFijo.toLocaleString()} Propina $${prop}`,hora:new Date().toLocaleTimeString().slice(0,5),ts:Date.now(),destino:'todos'});
+  const prop=parseInt(propStr||0,10)||0;
+  const ahora=Date.now();
+  const baseId=claveSeguraCaja(cmd.id||cmd.nroOrden||nom);
+  const ventaKey='venta_'+baseId;
+  const venta={...cmd,estado:'COBRADA',cobradaEn:ahora,cobradaPor:'Gustavo',total_cobrado:totalFijo,propina:prop,medio_pago:medio,schemaVersion:APP_VERSION};
+  const mov={id:ventaKey,tipo:'INGRESO',categoria:'VENTA',concepto:`Cobro ${nom}`,monto:totalFijo,medio_pago:medio,afecta_caja_efectivo:medio==='EFECTIVO',mesa:nom,comandaId:cmd.id||cmd.nroOrden||nom,usuario:'Gustavo',rol:'DUEÑO_PARRILLA',timestamp:ahora,fechaISO:new Date(ahora).toISOString()};
+
+  const ops=[
+    db.ref('comandas_activas/'+nom).update({estado:'COBRADA',total_cobrado:totalFijo,propina:prop,medio_pago:medio,timestamp_estado:ahora}),
+    db.ref('ventas/'+ventaKey).set(venta),
+    db.ref('caja_movimientos/'+ventaKey).set(mov),
+    db.ref('historial_caja/'+ventaKey).set(mov)
+  ];
+  if(prop>0){
+    ops.push(db.ref('propinas_dia/prop_'+baseId).set({mesa:nom,monto:prop,timestamp:ahora,cajero:'Gustavo',medio_pago:medio}));
+  }
+  await Promise.all(ops);
+  db.ref('mensajes').push({emisor:'Gustavo',texto:`✅ ${nom} COBRADA $${totalFijo.toLocaleString()} ${medio} Propina $${prop}`,hora:new Date().toLocaleTimeString().slice(0,5),ts:ahora,destino:'todos'});
   cerrarModal();
 }
 function cobrarSel(){if(comandas[mesaSel])cobrar(mesaSel);else alert('Seleccioná mesa');}
