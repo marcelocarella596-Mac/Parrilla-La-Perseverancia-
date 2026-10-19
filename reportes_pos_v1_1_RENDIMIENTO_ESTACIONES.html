@@ -1,0 +1,66 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>La Perseverancia | Reportes POS v1.1</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<style>*{box-sizing:border-box}body{font:14px system-ui;background:#101114;color:#eee;margin:0;padding:18px}main{max-width:1150px;margin:auto}h1{color:#ffc928;margin:0 0 6px}h2{font-size:17px;margin:25px 0 10px}small,.muted{color:#aaa}.filters{display:flex;flex-wrap:wrap;align-items:end;gap:10px;margin:20px 0}.filters label{display:grid;gap:5px}input,button{padding:10px;border:1px solid #444;border-radius:7px;background:#202229;color:white}button{cursor:pointer;background:#e6b728;color:#111;font-weight:700;border:0}button:disabled{opacity:.5}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(165px,1fr));gap:10px}.card{background:#1c2027;border:1px solid #303641;border-radius:10px;padding:15px}.card b{font-size:23px;display:block;margin-top:8px;color:#fff}.panel{overflow-x:auto;background:#1b1d22;border-radius:10px;border:1px solid #333}table{width:100%;border-collapse:collapse;min-width:520px}th,td{padding:9px 12px;border-bottom:1px solid #333;text-align:left}th{color:#ffc928}tr:last-child td{border:0}.note{background:#252015;border-left:3px solid #ffc928;padding:12px;border-radius:6px;margin:14px 0}#status{margin:10px 0;color:#aabbd1}</style></head><body><main><h1>🔥 La Perseverancia · Reportes</h1><div class="muted">POS v1.1 · Datos reales de Firebase · Ventas cobradas e historial de mesas</div>
+<div class="filters"><label>Desde<input type="date" id="desde"></label><label>Hasta<input type="date" id="hasta"></label><button id="consultar" onclick="cargar()">Consultar</button><button onclick="exportar()" id="exportar" disabled>Exportar CSV</button></div><div id="status">Elegí un período y consultá.</div>
+<div class="cards" id="metricas"></div><div class="note" id="nota">Las ventas se calculan desde <code>ventas</code> (Gustavo). Las mesas liberadas se consultan desde <code>historial_comandas</code> (Mariana actualizada). Los tiempos faltantes no se estiman.</div>
+<h2>Rendimiento de Cocina y Parrilla</h2><div class="note">Se calcula el tiempo desde el ingreso del ítem hasta que cada estación lo marca EN MANOS, usando <code>timestampItem</code> (o la apertura de la comanda cuando no existe) y <code>sectores.cocina/parrilla.timestampManos</code>. No equivale necesariamente al tiempo efectivo de cocción. Solo se incluyen platos con marcas horarias válidas guardados en <code>historial_comandas</code>.</div>
+<div class="panel"><table><thead><tr><th>Estación</th><th>Platos medidos</th><th>Tiempo promedio</th><th>Menor tiempo</th><th>Mayor tiempo</th></tr></thead><tbody id="estaciones"></tbody></table></div>
+<h2>Tiempo por producto y estación</h2><div class="panel"><table><thead><tr><th>Producto</th><th>Estación</th><th>Muestras</th><th>Promedio</th></tr></thead><tbody id="platosTiempo"></tbody></table></div>
+<h2>Ventas por medio de pago</h2><div class="panel"><table><thead><tr><th>Medio</th><th>Comandas</th><th>Total</th></tr></thead><tbody id="medios"></tbody></table></div>
+<h2>Productos más vendidos</h2><div class="panel"><table><thead><tr><th>Producto</th><th>Unidades</th><th>Facturación estimada por ítem</th></tr></thead><tbody id="productos"></tbody></table></div>
+<h2>Comandas cobradas</h2><div class="panel"><table><thead><tr><th>Fecha</th><th>Mesa / canal</th><th>Total</th><th>Medio</th><th>Duración hasta cobro</th></tr></thead><tbody id="ventasTabla"></tbody></table></div>
+<h2>Mesas liberadas (historial)</h2><div class="panel"><table><thead><tr><th>Fecha cierre</th><th>Mesa</th><th>Tiempo total</th><th>Importe</th></tr></thead><tbody id="histTabla"></tbody></table></div>
+</main><script>
+const firebaseConfig={apiKey:'AIzaSyAvrpQSDoq9S87j3J7V4-uhJnPFCylCU',authDomain:'parrilla-la-perseveranci-f3f54.firebaseapp.com',databaseURL:'https://parrilla-la-perseveranci-f3f54-default-rtdb.firebaseio.com',projectId:'parrilla-la-perseveranci-f3f54'};
+if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);const db=firebase.database();
+const $=id=>document.getElementById(id), fmt=n=>'$'+Number(n||0).toLocaleString('es-AR',{maximumFractionDigits:0}), esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const day=t=>{const d=new Date(Number(t));return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+const fecha=t=>Number(t)>0?new Date(Number(t)).toLocaleString('es-AR'):'Sin fecha';
+const dur=ms=>Number.isFinite(ms)&&ms>=0?`${Math.floor(ms/3600000).toString().padStart(2,'0')}:${Math.floor(ms/60000%60).toString().padStart(2,'0')}:${Math.floor(ms/1000%60).toString().padStart(2,'0')}`:'Sin datos';
+const monto=v=>Number(v.total_cobrado??v.total??0)||0;
+const tsVenta=v=>Number(v.cobradaEn||0); const tsHist=v=>Number(v.liberadaEn||0);
+const normMedio=v=>String(v.medio_pago||v.pago||'SIN INFORMAR').toUpperCase().replace(/\s+/g,'_');
+const items=v=>Array.isArray(v.items)?v.items:Object.values(v.items||{});
+let exportRows=[];
+function tabla(id,rows,colspan){$(id).innerHTML=rows.length?rows.join(''):`<tr><td colspan="${colspan}" class="muted">Sin registros en este período</td></tr>`}
+function csvCell(x){return '"'+String(x??'').replace(/"/g,'""')+'"'}
+function exportar(){if(!exportRows.length)return;const csv='\uFEFF'+[['fecha','mesa','total','medio','duracion_hasta_cobro'],...exportRows].map(r=>r.map(csvCell).join(';')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`reporte_ventas_${$('desde').value}_${$('hasta').value}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+async function cargar(){const d=$('desde').value,h=$('hasta').value;if(!d||!h||d>h)return alert('Seleccioná un rango de fechas válido');$('consultar').disabled=true;$('status').textContent='Consultando Firebase...';
+try{
+ const [sv,sh]=await Promise.all([db.ref('ventas').orderByChild('cobradaEn').startAt(new Date(d+'T00:00:00').getTime()).endAt(new Date(h+'T23:59:59.999').getTime()).once('value'),db.ref('historial_comandas').orderByChild('liberadaEn').startAt(new Date(d+'T00:00:00').getTime()).endAt(new Date(h+'T23:59:59.999').getTime()).once('value')]);
+ const ventas=Object.values(sv.val()||{}).filter(v=>tsVenta(v)&&day(tsVenta(v))>=d&&day(tsVenta(v))<=h);
+ const hist=Object.values(sh.val()||{}).filter(v=>tsHist(v)&&day(tsHist(v))>=d&&day(tsHist(v))<=h);
+ const estaciones={PARRILLA:[],COCINA:[]},platosTiempo={};
+ hist.forEach(cmd=>items(cmd).forEach(it=>{
+   const base=Number(it.timestampItem||cmd.timestamp||0);
+   if(!Number.isFinite(base)||base<1000000000000)return;
+   for(const [nombre,clave] of [['PARRILLA','parrilla'],['COCINA','cocina']]){
+     const fin=Number(it.sectores?.[clave]?.timestampManos||0);
+     if(!Number.isFinite(fin)||fin<base||fin>tsHist(cmd)||fin-base>86400000)continue;
+     const ms=fin-base;estaciones[nombre].push(ms);
+     const nombrePlato=String(it.nombre||it.n||it.name||'Sin nombre');
+     const key=nombrePlato+'|'+nombre;
+     if(!platosTiempo[key])platosTiempo[key]={nombre:nombrePlato,estacion:nombre,tiempos:[]};
+     platosTiempo[key].tiempos.push(ms);
+   }
+ }));
+ const promedioArr=a=>a.reduce((x,y)=>x+y,0)/a.length;
+ tabla('estaciones',Object.entries(estaciones).map(([nombre,a])=>`<tr><td>${nombre}</td><td>${a.length}</td><td>${a.length?dur(promedioArr(a)):'Sin datos'}</td><td>${a.length?dur(Math.min(...a)):'Sin datos'}</td><td>${a.length?dur(Math.max(...a)):'Sin datos'}</td></tr>`),5);
+ tabla('platosTiempo',Object.values(platosTiempo).sort((a,b)=>b.tiempos.length-a.tiempos.length).map(v=>`<tr><td>${esc(v.nombre)}</td><td>${v.estacion}</td><td>${v.tiempos.length}</td><td>${dur(promedioArr(v.tiempos))}</td></tr>`),4);
+ const total=ventas.reduce((s,v)=>s+monto(v),0),propinas=ventas.reduce((s,v)=>s+Number(v.propina||0),0);
+ const conTiempo=ventas.map(v=>{const inicio=Number(v.timestamp||0),fin=tsVenta(v);return inicio>1000000000000&&fin>=inicio?fin-inicio:null}).filter(x=>x!==null);
+ const promedio=conTiempo.length?conTiempo.reduce((a,b)=>a+b,0)/conTiempo.length:null;
+ const histT=hist.map(v=>Number(v.duracionTotalMs)).filter(x=>Number.isFinite(x)&&x>=0&&x>0);
+ const met=[['Ventas cobradas',ventas.length],['Facturación',fmt(total)],['Ticket promedio',ventas.length?fmt(total/ventas.length):'Sin datos'],['Propinas registradas',fmt(propinas)],['Tiempo medio hasta cobro',promedio===null?'Sin datos':dur(promedio)],['Platos medidos Cocina',estaciones.COCINA.length],['Platos medidos Parrilla',estaciones.PARRILLA.length],['Mesas liberadas',hist.length],['Tiempo medio de ocupación',histT.length?dur(histT.reduce((a,b)=>a+b,0)/histT.length):'Sin datos']];
+ $('metricas').innerHTML=met.map(([n,v])=>`<div class="card">${esc(n)}<b>${esc(v)}</b></div>`).join('');
+ const pagos={},prods={};ventas.forEach(v=>{const m=normMedio(v);if(!pagos[m])pagos[m]={n:0,total:0};pagos[m].n++;pagos[m].total+=monto(v);items(v).forEach(it=>{const n=it.nombre||it.n||it.name||'Sin nombre';const q=Number(it.cantidad??it.qty??1)||1;const p=Number(it.precio??it.p??it.price??0)||0;if(!prods[n])prods[n]={q:0,total:0};prods[n].q+=q;prods[n].total+=q*p})});
+ tabla('medios',Object.entries(pagos).sort((a,b)=>b[1].total-a[1].total).map(([n,v])=>`<tr><td>${esc(n)}</td><td>${v.n}</td><td>${fmt(v.total)}</td></tr>`),3);
+ tabla('productos',Object.entries(prods).sort((a,b)=>b[1].q-a[1].q).map(([n,v])=>`<tr><td>${esc(n)}</td><td>${v.q}</td><td>${fmt(v.total)}</td></tr>`),3);
+ ventas.sort((a,b)=>tsVenta(b)-tsVenta(a));exportRows=ventas.map(v=>{const t=Number(v.timestamp||0),f=tsVenta(v);return [fecha(f),v.mesa||v.canal||'',monto(v),normMedio(v),dur(t>1000000000000&&f>=t?f-t:NaN)]});
+ tabla('ventasTabla',exportRows.map(r=>`<tr>${r.map((c,i)=>`<td>${esc(i===2?fmt(c):c)}</td>`).join('')}</tr>`),5);
+ hist.sort((a,b)=>tsHist(b)-tsHist(a));tabla('histTabla',hist.map(v=>`<tr><td>${esc(fecha(tsHist(v)))}</td><td>${esc(v.mesa||v.claveOriginal||'')}</td><td>${esc(dur(Number(v.duracionTotalMs)))}</td><td>${fmt(monto(v))}</td></tr>`),4);
+ $('exportar').disabled=!exportRows.length;$('status').textContent=`Consulta completa: ${ventas.length} cobros y ${hist.length} mesas liberadas.`;
+ $('nota').textContent='Fuente: ventas cobradas e historial_comandas. Los tiempos por estación solo se muestran cuando hay timestamps reales de entrega sectorial en el historial; las comandas aún activas no integran estos promedios. Los cobros anteriores a la implementación del historial pueden carecer de tiempos. La facturación por ítem usa precios guardados.';
+}catch(e){console.error(e);$('status').textContent='No se pudo consultar Firebase: '+e.message+' (revisar conexión, reglas e índices).';}finally{$('consultar').disabled=false}}
+const hoy=new Date();$('hasta').value=day(hoy.getTime());const inicio=new Date(hoy);inicio.setDate(inicio.getDate()-6);$('desde').value=day(inicio.getTime());
+</script></body></html>
