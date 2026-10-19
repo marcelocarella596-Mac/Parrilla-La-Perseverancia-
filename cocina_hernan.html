@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>COCINA HERNÁN - v3.4.1 CAJA PROPIETARIO + RUTAS</title>
-<script type="text/javascript" src="https://me.kis.v2.scr.kaspersky-labs.com/FD126C42-EBFA-4E12-B309-BB3FDD723AC1/main.js?attr=veMaVst5yiimqfEkS7P5m7VVoIwhu2kqS56Qz-zVd3x-6lF3GRJ9Ja04maAQxtkkg36_PtRadapLNB6NgNfpGGPMx4FkPSzkto6t7lIqsgvdu7GAIsl_7tr8HWgN4s3DoQcUGNSdZbJ9VdBS52FtlLMZ5l6XHIsVUri-KJ5FMX1mxdD7JkN1WT8UWe3MxCebOBjrCugWrtcYO7K_XMpaMqmawlBn7cz7JgSr588rbJZI7cQGIKSmRlRs0QpDP5u6xpf5CMiBl1w53Q018ZKSyw" charset="UTF-8"></script><script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<title>COCINA HERNÁN - v3.4.2 FIX APERTURA + CAJA + RUTAS</title>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',sans-serif}
@@ -54,13 +54,13 @@ header{background:linear-gradient(90deg,#b03a2e,#d35400);padding:10px 14px;borde
 <body>
 
 <header>
-  <div><b>🔥 LA PERSEVERANCIA</b> <span style="font-size:11px;opacity:.8">| COCINA HERNÁN v3.4.1 CAJA + RUTAS</span></div>
+  <div><b>🔥 LA PERSEVERANCIA</b> <span style="font-size:11px;opacity:.8">| COCINA HERNÁN v3.4.2 FIX APERTURA</span></div>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     <button class="btn btn-caja" onclick="abrirCaja()">💰 CAJA</button>
     <button class="btn btn-msj" onclick="abrirMensajes()">💬 MENSAJES</button>
     <button class="btn" onclick="abrirResumen()">📋 RESUMEN</button>
     <button class="btn btn-rojo" onclick="abrirAgotar()">🚫 AGOTAR</button>
-    <span style="font-size:11px;color:#00ff66;border:1px solid #00ff66;padding:5px 8px;border-radius:5px">• v3.4.1 CAJA + RUTAS</span>
+    <span style="font-size:11px;color:#00ff66;border:1px solid #00ff66;padding:5px 8px;border-radius:5px">• v3.4.2 FIX APERTURA</span>
   </div>
 </header>
 
@@ -70,12 +70,12 @@ header{background:linear-gradient(90deg,#b03a2e,#d35400);padding:10px 14px;borde
       <span>ÍTEMS COCINA - COMANDA COMPLETA</span>
       <span id="cant">0</span>
     </div>
-    <div id="listaFIFO"></div>
+    <div id="listaFIFO"><div style="color:#aaa;padding:10px">Conectando comandas…</div></div>
   </div>
 
   <div class="panel">
     <div class="panel-titulo"><span>📍 PLANO - comandas_activas + WHATSAPP</span></div>
-    <div id="plano"></div>
+    <div id="plano"><div style="color:#aaa;padding:10px">Preparando plano…</div></div>
   </div>
 </div>
 
@@ -175,6 +175,9 @@ const MENU_COMPLETO=[
 let comandas={};
 let sel=null;
 let agotadosCache={};
+let ultimaFirmaRender="";
+let ultimoMinutoRender=-1;
+let primeraCargaComandas=false;
 
 function getNombre(it){
   return (it?.n||it?.nombre||it?.name||'').toString().trim();
@@ -482,7 +485,8 @@ db.ref('comandas_activas').on('value',s=>{
   });
 
   comandas=nuevo;
-  render();
+  primeraCargaComandas=true;
+  render(true);
 });
 
 db.ref('platos_agotados').on('value',s=>{
@@ -508,7 +512,14 @@ db.ref('mensajes_chat').limitToLast(30).on('value',snap=>{
   box.scrollTop=box.scrollHeight;
 });
 
-function render(){
+function render(forzar=false){
+  // Solo reconstruir si cambian comandas o el minuto visible.
+  if(!primeraCargaComandas) return;
+  const minutoActual=Math.floor(Date.now()/60000);
+  const firma=JSON.stringify(comandas);
+  if(!forzar && firma===ultimaFirmaRender && minutoActual===ultimoMinutoRender) return;
+  ultimaFirmaRender=firma;
+  ultimoMinutoRender=minutoActual;
   const ids=Object.keys(comandas);
   document.getElementById('cant').textContent=ids.length;
 
@@ -1051,7 +1062,8 @@ document.addEventListener('keydown',e=>{
   if(e.key==='Escape') cerrar();
 });
 
-setInterval(render,1000);
+// El contador visual usa minutos; no requiere reconstruir el DOM cada segundo.
+setInterval(()=>render(),15000);
 </script>
 </body>
 </html>
