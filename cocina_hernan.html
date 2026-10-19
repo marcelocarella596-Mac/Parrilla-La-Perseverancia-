@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>COCINA HERNÁN - v3.4.2 FIX APERTURA + CAJA + RUTAS</title>
+<title>COCINA HERNÁN - v3.4.4 STOCK + CRONÓMETRO + CAJA + RUTAS</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <style>
@@ -54,13 +54,13 @@ header{background:linear-gradient(90deg,#b03a2e,#d35400);padding:10px 14px;borde
 <body>
 
 <header>
-  <div><b>🔥 LA PERSEVERANCIA</b> <span style="font-size:11px;opacity:.8">| COCINA HERNÁN v3.4.2 FIX APERTURA</span></div>
+  <div><b>🔥 LA PERSEVERANCIA</b> <span style="font-size:11px;opacity:.8">| COCINA HERNÁN v3.4.4 STOCK + CRONÓMETRO</span></div>
   <div style="display:flex;gap:6px;flex-wrap:wrap">
     <button class="btn btn-caja" onclick="abrirCaja()">💰 CAJA</button>
     <button class="btn btn-msj" onclick="abrirMensajes()">💬 MENSAJES</button>
     <button class="btn" onclick="abrirResumen()">📋 RESUMEN</button>
     <button class="btn btn-rojo" onclick="abrirAgotar()">🚫 AGOTAR</button>
-    <span style="font-size:11px;color:#00ff66;border:1px solid #00ff66;padding:5px 8px;border-radius:5px">• v3.4.2 FIX APERTURA</span>
+    <span style="font-size:11px;color:#00ff66;border:1px solid #00ff66;padding:5px 8px;border-radius:5px">• v3.4.4 STOCK + CRONÓMETRO</span>
   </div>
 </header>
 
@@ -167,10 +167,7 @@ const NOMBRES={
   "Delivery":"DELIVERY"
 };
 
-const MENU_COMPLETO=[
-  "Asado","Vacio","Bife de chorizo","Entraña","Chorizo","Morcilla",
-  "Chinchulin","Molleja","Milanesa","Papas fritas"
-];
+const MENU_COMPLETO=["Adicional Guarnición", "Coca Cola 500ml", "Coca Cola 1L", "Coca Zero 500ml", "Sprite 500ml", "Fanta 500ml", "Agua s/gas 500ml", "Agua c/gas 500ml", "Jugo Naranja", "Limonada", "Soda", "Tónica", "Pomelo", "Pepsi 500ml", "Pepsi Zero 500ml", "Aquarius Manzana", "Aquarius Pera", "Levite 500ml", "Quilmes 1L", "Brahma 1L", "Stella Artois", "Heineken", "Ensalada Mixta", "Ensalada Completa", "Caesar", "Caprese", "Rúcula y Parmesano", "Waldorf", "Papas Fritas", "Puré", "Ensalada Guarnición", "Provoleta", "Milanesa c/fritas", "Milanesa c/fritas y 2 huevos", "Milanesa napolitana c/fritas", "Suprema c/fritas", "Supremas c/fritas y 2 huevos", "Suprema napolitana c/fritas", "Tortilla de papas", "Tortilla c/jamón y queso", "Revuelto Gramajo", "Asado", "Vacío", "Bife de Chorizo", "Entraña", "Bondiola", "Chorizo", "Morcilla", "Chinchulines", "Mollejas", "Matambre", "Pollo 1/2", "Pollo Entero", "Costillitas de Cerdo", "Asado Banderita", "Ojo de Bife", "Tira de Asado", "Parrillada p/2", "Parrillada p/4", "Riñones", "Flan casero", "Budín de Pan", "Helado", "Choripán", "Morcipán", "Choripán c/fritas", "Bondiola sándwich", "Bondiola c/fritas", "Vacío sándwich", "Vacío c/fritas", "Bife sándwich", "Bife c/fritas", "Entraña sándwich", "Entraña c/fritas", "Milanesa sándwich", "Milanesa c/fritas sándwich", "Suprema sándwich", "Suprema c/fritas sándwich", "Pollo sándwich", "Pollo c/fritas sándwich", "Hamburguesa", "Hamburguesa c/fritas", "Hamburguesa completa", "Hamburguesa completa c/fritas", "Malbec Alma Mora", "Malbec Luigi Bosca", "Cabernet Rutini", "Malbec Catena", "Torrontés", "Chardonnay", "Rosado", "Copa Vino Tinto", "Copa Vino Blanco"];
 
 let comandas={};
 let sel=null;
@@ -491,6 +488,7 @@ db.ref('comandas_activas').on('value',s=>{
 
 db.ref('platos_agotados').on('value',s=>{
   agotadosCache=s.val()||{};
+  if(document.getElementById('modalAgotar').style.display==='flex') abrirAgotar();
 });
 
 db.ref('mensajes_chat').limitToLast(30).on('value',snap=>{
@@ -512,6 +510,25 @@ db.ref('mensajes_chat').limitToLast(30).on('value',snap=>{
   box.scrollTop=box.scrollHeight;
 });
 
+function inicioCronometro(cmd){
+  const t=Number(cmd?.timestamp||0);
+  return Number.isFinite(t)&&t>1000000000000?t:0;
+}
+function formatoDuracion(ms){
+  const seg=Math.max(0,Math.floor(ms/1000));
+  return [Math.floor(seg/3600),Math.floor(seg%3600/60),seg%60].map(v=>String(v).padStart(2,'0')).join(':');
+}
+function actualizarCronometros(){
+  const ahora=Date.now();
+  document.querySelectorAll('[data-inicio-comanda]').forEach(el=>{
+    const inicio=Number(el.dataset.inicioComanda);
+    el.textContent=inicio?formatoDuracion(ahora-inicio):'SIN HORA DE INICIO';
+    el.title=inicio?'Tiempo desde la creación de la comanda':'La comanda no tiene una marca de inicio válida';
+  });
+}
+function relojComanda(cmd){
+  return `<span data-inicio-comanda="${inicioCronometro(cmd)}">--:--:--</span>`;
+}
 function render(forzar=false){
   // Solo reconstruir si cambian comandas o el minuto visible.
   if(!primeraCargaComandas) return;
@@ -589,7 +606,7 @@ function render(forzar=false){
         <span class="badge-tipo" style="color:${tipo==='MIXTA'?'#f1c40f':'#00ff66'}">${tipo}</span>
       </div>
       <div style="font-size:10px;color:#aaa;margin:4px 0">
-        ${cmd.estado_cocina||cmd.estado} - ${mins.toFixed(1)}min ${cmd.direccion?'- '+cmd.direccion:''}
+        ${cmd.estado_cocina||cmd.estado} · ⏱ ${relojComanda(cmd)} ${cmd.direccion?'- '+cmd.direccion:''}
       </div>
       ${itemsHTML}
     `;
@@ -632,7 +649,7 @@ function render(forzar=false){
     card.innerHTML=`
       <div><span style="color:#f1c40f">#${String(cmd.nroOrden).slice(-3)}</span> ${NOMBRES[id]}</div>
       <ul style="margin:6px 0">${lista}</ul>
-      <div class="timer">${mins.toFixed(1)} min</div>
+      <div class="timer">⏱ ${relojComanda(cmd)}</div>
     `;
     g.appendChild(card);
   });
@@ -657,10 +674,11 @@ function render(forzar=false){
       <div style="color:#25D366;font-weight:bold">📱 ${id}</div>
       <div style="font-size:10px">${cmd.cliente||''}<br>${cmd.direccion||''}</div>
       <div style="margin:6px 0">${lista}</div>
-      <div class="timer">${mins.toFixed(1)} min - $${cmd.total_cobrado||0}</div>
+      <div class="timer">⏱ ${relojComanda(cmd)} - $${cmd.total_cobrado||0}</div>
     `;
     g.appendChild(card);
   });
+  actualizarCronometros();
 }
 
 function abrir(id){
@@ -672,7 +690,7 @@ function abrir(id){
 
   let det=`
     <b>Estado Cocina: ${cmd.estado_cocina||cmd.estado}</b><br>
-    Estado Parrilla: ${cmd.estado_parrilla||cmd.estado}<br>
+    Estado Parrilla: ${cmd.estado_parrilla||cmd.estado}<br>    ⏱ Tiempo transcurrido: ${relojComanda(cmd)}<br>
     Cliente: ${cmd.cliente||''}<br>
     Dir: ${cmd.direccion||''}<br>
     Key FB: ${cmd.firebaseKey}<br><br>
@@ -702,6 +720,7 @@ function abrir(id){
 
   document.getElementById('modalDetalle').innerHTML=det;
   document.getElementById('modal').style.display='flex';
+  actualizarCronometros();
 }
 
 function cerrar(){
@@ -1035,22 +1054,38 @@ function enviarMensaje(){
   inp.value='';
 }
 
+function claveStock(nombre){
+  return String(nombre||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+}
+function estaAgotado(nombre){
+  // Compatibilidad con las claves históricas exactas de Mariana.
+  return Object.entries(agotadosCache).some(([k,v])=>!!v && claveStock(k)===claveStock(nombre));
+}
 function abrirAgotar(){
   const cont=document.getElementById('listaAgotar');
   cont.innerHTML='';
-
   MENU_COMPLETO.forEach(plato=>{
-    const esta=!!agotadosCache[plato];
-    const d=document.createElement('div');
+    const esta=estaAgotado(plato);
+    const d=document.createElement('button');
+    d.type='button';
     d.style.cssText=`padding:10px;border-radius:6px;cursor:pointer;font-size:11px;border:1px solid ${esta?'#c0392b':'#333'};background:${esta?'#3a1212':'#1e1e1e'};color:${esta?'#ff6b6b':'#fff'};text-align:center`;
-    d.textContent=(esta?'❌ ':'')+plato;
-    d.onclick=()=>{
-      if(esta) db.ref('platos_agotados/'+plato).remove();
-      else db.ref('platos_agotados/'+plato).set({timestamp:Date.now(),por:'Hernán'});
+    d.textContent=(esta?'❌ AGOTADO · ':'✓ DISPONIBLE · ')+plato;
+    d.onclick=async()=>{
+      d.disabled=true;
+      try{
+        const keys=Object.keys(agotadosCache).filter(k=>claveStock(k)===claveStock(plato));
+        if(esta){
+          await Promise.all((keys.length?keys:[plato]).map(k=>db.ref('platos_agotados/'+k).remove()));
+        }else{
+          await db.ref('platos_agotados/'+plato).set({timestamp:Date.now(),por:'Hernán'});
+        }
+        // El listener actualiza la caché; refrescar cuando se confirme.
+        await db.ref('platos_agotados').once('value').then(s=>{agotadosCache=s.val()||{};});
+        abrirAgotar();
+      }catch(e){alert('No se pudo actualizar el stock: '+e.message);d.disabled=false;}
     };
     cont.appendChild(d);
   });
-
   document.getElementById('modalAgotar').style.display='flex';
 }
 
@@ -1064,6 +1099,8 @@ document.addEventListener('keydown',e=>{
 
 // El contador visual usa minutos; no requiere reconstruir el DOM cada segundo.
 setInterval(()=>render(),15000);
+setInterval(actualizarCronometros,1000);
+actualizarCronometros();
 </script>
 </body>
 </html>
