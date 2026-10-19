@@ -1057,24 +1057,41 @@ function enviarMensaje(){
 function claveStock(nombre){
   return String(nombre||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
 }
+function ingredienteAgotado(nombre, estaMarcado){
+  const n=claveStock(nombre);
+  // Bloqueos derivados: el producto principal bloquea sus preparaciones.
+  const reglas=[
+    {principal:'Chorizo',productos:['Choripán','Choripán c/fritas']},
+    {principal:'Morcilla',productos:['Morcipán']},
+    {principal:'Vacío',productos:['Vacío sándwich','Vacío c/fritas']}
+  ];
+  const regla=reglas.find(r=>r.productos.some(p=>claveStock(p)===n));
+  return regla&&estaMarcado(regla.principal)?regla.principal:null;
+}
+function estaAgotadoDirecto(nombre){
+  return Object.entries(agotadosCache).some(([k,v])=>!!v && claveStock(k)===claveStock(nombre));
+}
 function estaAgotado(nombre){
   // Compatibilidad con las claves históricas exactas de Mariana.
-  return Object.entries(agotadosCache).some(([k,v])=>!!v && claveStock(k)===claveStock(nombre));
+  return estaAgotadoDirecto(nombre)||!!ingredienteAgotado(nombre,estaAgotadoDirecto);
 }
 function abrirAgotar(){
   const cont=document.getElementById('listaAgotar');
   cont.innerHTML='';
   MENU_COMPLETO.forEach(plato=>{
     const esta=estaAgotado(plato);
+    const dependencia=ingredienteAgotado(plato,estaAgotadoDirecto);
+    const directo=estaAgotadoDirecto(plato);
     const d=document.createElement('button');
     d.type='button';
     d.style.cssText=`padding:10px;border-radius:6px;cursor:pointer;font-size:11px;border:1px solid ${esta?'#c0392b':'#333'};background:${esta?'#3a1212':'#1e1e1e'};color:${esta?'#ff6b6b':'#fff'};text-align:center`;
-    d.textContent=(esta?'❌ AGOTADO · ':'✓ DISPONIBLE · ')+plato;
+    d.textContent=(esta?'❌ AGOTADO · ':'✓ DISPONIBLE · ')+plato+(dependencia?' (por falta de '+dependencia+')':'');
+    if(dependencia&&!directo){d.disabled=true;d.title='Rehabilitá '+dependencia+' para liberar este producto';}
     d.onclick=async()=>{
       d.disabled=true;
       try{
         const keys=Object.keys(agotadosCache).filter(k=>claveStock(k)===claveStock(plato));
-        if(esta){
+        if(directo){
           await Promise.all((keys.length?keys:[plato]).map(k=>db.ref('platos_agotados/'+k).remove()));
         }else{
           await db.ref('platos_agotados/'+plato).set({timestamp:Date.now(),por:'Hernán'});
