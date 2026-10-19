@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>GUSTAVO v3.4.2 - CAJA + RUTAS PARRILLA</title>
+<title>GUSTAVO v3.4.3 - STOCK + CRONÓMETRO</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js"></script>
@@ -16,7 +16,7 @@ body{background:#0a0a0a;color:#fff;overflow:hidden}
 .panel{background:#151515;border:1px solid #262626;border-radius:12px;padding:10px;display:flex;flex-direction:column;overflow:hidden}.panel h3{font-size:10px;color:#ff9900;letter-spacing:1px;margin-bottom:8px;text-transform:uppercase;flex-shrink:0}
 select,input{width:100%;background:#0e0e0e;border:1px solid #333;color:#fff;padding:8px;border-radius:7px;font-size:12px;margin-bottom:8px;flex-shrink:0}
 .tabs{display:flex;gap:4px;margin:0 0 8px;overflow-x:auto;flex-shrink:0}.tab{padding:6px 10px;border-radius:20px;border:1px solid #333;background:#1e1e1e;color:#999;font-size:10px;cursor:pointer;white-space:nowrap}.tab.active{background:#c0392b;color:#fff;border-color:#ff5e5e;font-weight:700}
-.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1;overflow-y:auto;align-content:start;padding-right:4px;min-height:0}.item{background:#1d1d1d;border:1px solid #2a2a2a;border-radius:9px;padding:7px;cursor:pointer}.item b{font-size:10px;display:block;min-height:22px}.item i{font-size:8px;color:#666;display:block;margin:2px 0}.item span{font-size:10px;color:#2ecc71;font-weight:700}
+.menu-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px;flex:1;overflow-y:auto;align-content:start;padding-right:4px;min-height:0}.item{background:#1d1d1d;border:1px solid #2a2a2a;border-radius:9px;padding:7px;cursor:pointer}.item b{font-size:10px;display:block;min-height:22px}.item i{font-size:8px;color:#666;display:block;margin:2px 0}.item span{font-size:10px;color:#2ecc71;font-weight:700}.item.agotado{opacity:.45;cursor:not-allowed;border-color:#b91c1c}.item.agotado span{color:#ff6b6b}.cronometro-comanda{font-variant-numeric:tabular-nums;color:#38bdf8;font-weight:900}
 .seleccion{max-height:18vh;overflow-y:auto;background:#0a0a0a;border:1px solid #222;border-radius:8px;padding:6px;flex-shrink:0;min-height:40px}.total-box{background:#000;border:1px solid #ff9900;border-radius:9px;padding:10px;margin-top:8px;flex-shrink:0}
 .btn{width:100%;padding:11px;border-radius:9px;border:1px solid #ff9900;background:linear-gradient(180deg,#e67e22,#7a0000);color:#fff;font-weight:900;cursor:pointer;margin-top:8px}.btn-sec{width:100%;padding:8px;border-radius:8px;border:1px solid #444;background:#1a1a1a;color:#aaa;font-size:11px;cursor:pointer;margin-top:6px}
 .plano{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;align-content:start;overflow-y:auto;flex:1;min-height:0;padding-right:4px}
@@ -34,7 +34,7 @@ select,input{width:100%;background:#0e0e0e;border:1px solid #333;color:#fff;padd
 </head>
 <body>
 <div class="header">
-  <h1>🔥 GUSTAVO v3.4.2 - COMANDAS + CAJA</h1>
+  <h1>🔥 GUSTAVO v3.4.3 - COMANDAS + CAJA</h1>
   <div class="badges">
     <span class="badge red" id="bFirebase">Conectando...</span>
     <span class="badge" id="reloj">--:--</span>
@@ -140,7 +140,7 @@ const firebaseConfig={
 if(!firebase.apps.length)firebase.initializeApp(firebaseConfig);
 firebase.database().goOnline();
 const db=firebase.database();
-const APP_VERSION='3.4.2';
+const APP_VERSION='3.4.4';
 const MOTOR_PRODUCCION='COMPONENTES_MIXTOS';
 
 const MESAS=['Salón - Mesa 1','Salón - Mesa 2','Salón - Mesa 3','Salón - Mesa 4','Vereda - Mesa 5','Vereda - Mesa 6','Vereda - Mesa 7','Canal - Mostrador','Canal - Delivery','Canal - Pickup','Canal - WhatsApp'];
@@ -204,8 +204,27 @@ let MENU=[
 {n:'Copa Vino Blanco',p:3000,cat:'vino',sub:'Vinos'}
 ];
 
-let sel=[],filtro='todos',busca='',mesaSel='Salón - Mesa 1',comandas={},sonidoOn=true,audioCtx=null,ultimaAlarma={};
+let stockAgotado={},stockListo=false,sel=[],filtro='todos',busca='',mesaSel='Salón - Mesa 1',comandas={},sonidoOn=true,audioCtx=null,ultimaAlarma={};
 
+function claveStock(s){return norm(s).replace(/[^a-z0-9]/g,'');}
+function agotadoDirecto(nombre){const clave=claveStock(nombre);return Object.entries(stockAgotado).some(([k,v])=>!!v&&claveStock(k)===clave);}
+function ingredienteAgotado(nombre, estaMarcado){
+  const n=claveStock(nombre);
+  // Bloqueos derivados: el producto principal bloquea sus preparaciones.
+  const reglas=[
+    {principal:'Chorizo',productos:['Choripán','Choripán c/fritas']},
+    {principal:'Morcilla',productos:['Morcipán']},
+    {principal:'Vacío',productos:['Vacío sándwich','Vacío c/fritas']}
+  ];
+  const regla=reglas.find(r=>r.productos.some(p=>claveStock(p)===n));
+  return regla&&estaMarcado(regla.principal)?regla.principal:null;
+}
+function agotado(nombre){return agotadoDirecto(nombre)||!!ingredienteAgotado(nombre,agotadoDirecto);}
+
+function cronometroInicio(c){const t=Number(c?.timestamp||0);return Number.isFinite(t)&&t>1000000000000?t:0;}
+function duracion(ms){let sec=Math.max(0,Math.floor(ms/1000));return [Math.floor(sec/3600),Math.floor(sec%3600/60),sec%60].map(v=>String(v).padStart(2,'0')).join(':');}
+function relojHTML(c){const t=cronometroInicio(c);return `<span class="cronometro-comanda" data-inicio="${t}">${t?duracion(Date.now()-t):'SIN INICIO'}</span>`;}
+function actualizarCronometros(){document.querySelectorAll('.cronometro-comanda[data-inicio]').forEach(el=>{const t=Number(el.dataset.inicio);if(t)el.textContent=duracion(Date.now()-t);});}
 function norm(s){return (s||'').toString().normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim();}
 function getNombre(it){return (it?.n||it?.nombre||it?.name||'').toString().trim();}
 function getPrecio(it){return it?.p||it?.precio||it?.price||0;}
@@ -347,6 +366,10 @@ function toggleSonido(){sonidoOn=!sonidoOn;document.getElementById('bSonido').te
 function init(){
   document.getElementById('ubic').addEventListener('change',e=>mesaSel=e.target.value);
   renderTabs();renderMenu();renderPlano();
+  db.ref('platos_agotados').on('value',snap=>{
+    stockAgotado=snap.val()||{};stockListo=true;renderMenu();renderSel();
+  },err=>{stockListo=false;console.error('Error al leer stock',err);renderMenu();});
+  setInterval(actualizarCronometros,1000);
   setInterval(()=>document.getElementById('reloj').innerText=new Date().toLocaleTimeString(),1000);
   setTimeout(generarQR,600);
 
@@ -379,8 +402,8 @@ function renderMsgs(snap){
 }
 function renderTabs(){const c=document.getElementById('tabs');c.innerHTML='';CATS.forEach(cat=>{const d=document.createElement('div');d.className='tab'+(filtro===cat.id?' active':'');d.innerText=cat.n;d.onclick=()=>{filtro=cat.id;renderTabs();renderMenu();renderPlano();};c.appendChild(d);});}
 function filtrarBus(){busca=document.getElementById('bus').value.toLowerCase();renderMenu();}
-function renderMenu(){const g=document.getElementById('grid');g.innerHTML='';MENU.filter(m=>(filtro==='todos'||m.cat===filtro)&&(!busca||m.n.toLowerCase().includes(busca))).forEach(m=>{const d=document.createElement('div');d.className='item';d.innerHTML=`<b>${m.n}</b><i>${m.sub}</i><span>$${m.p.toLocaleString()}</span>`;d.onclick=()=>add(m);g.appendChild(d);});}
-function add(m){sel.push({...m,cantidad:1});renderSel();}
+function renderMenu(){const g=document.getElementById('grid');g.innerHTML='';MENU.filter(m=>(filtro==='todos'||m.cat===filtro)&&(!busca||m.n.toLowerCase().includes(busca))).forEach(m=>{const d=document.createElement('div');const no=agotado(m.n);d.className='item'+(no?' agotado':'');d.innerHTML=`<b>${m.n}</b><i>${m.sub}</i><span>${no?'⛔ AGOTADO':!stockListo?'⏳ VERIFICANDO STOCK':'$'+m.p.toLocaleString()}</span>`;d.onclick=()=>add(m);g.appendChild(d);});}
+function add(m){if(!stockListo)return alert('Esperá la sincronización del stock.');if(agotado(m.n))return alert(m.n+' está AGOTADO');sel.push({...m,cantidad:1});renderSel();}
 function renderSel(){
   const cont=document.getElementById('sel');
   if(!sel.length){cont.innerHTML='No hay items';document.getElementById('total').innerText='$0';return;}
@@ -390,8 +413,15 @@ function renderSel(){
 }
 function limpiar(){sel=[];renderSel();}
 
-function enviar(){
+async function enviar(){
   if(!sel.length)return;
+  if(!stockListo)return alert('Sin sincronización de stock: no se puede enviar.');
+  try{
+    const snapStock=await db.ref('platos_agotados').once('value');
+    stockAgotado=snapStock.val()||{};
+    const noDisponibles=sel.filter(it=>agotado(it.n)).map(it=>it.n);
+    if(noDisponibles.length){renderMenu();return alert('Productos agotados: '+noDisponibles.join(', '));}
+  }catch(e){return alert('No se pudo verificar el stock: '+e.message);}
   const canalesMultiples=['WhatsApp','Delivery','Pickup','Mostrador'];
   const esMultiple=canalesMultiples.some(c=>mesaSel.includes(c));
   let targetKey=mesaSel;
@@ -451,7 +481,7 @@ function renderPlano(){
 
     const html=items.map((it,idx)=>htmlItemParrilla(it,idx,false)).join('');
     const d=document.createElement('div');d.className=cls;
-    d.innerHTML=`<h4>${String(c.mesa).toUpperCase()} <span style="font-size:8px;background:#000;padding:2px 5px;border-radius:4px">${tipo} - ${ep.slice(0,4)}</span></h4>${html}<div class="pr">$${(c.total_cobrado||c.total||0).toLocaleString()}</div><div style="font-size:8px;color:#888;margin-top:4px">${c.hora||''} | ${Math.floor((Date.now()-(c.timestamp||Date.now()))/60000)}min | ${c.emisor||''} | ${c.canal||''}</div>`;
+    d.innerHTML=`<h4>${String(c.mesa).toUpperCase()} <span style="font-size:8px;background:#000;padding:2px 5px;border-radius:4px">${tipo} - ${ep.slice(0,4)}</span></h4>${html}<div class="pr">$${(c.total_cobrado||c.total||0).toLocaleString()}</div><div style="font-size:8px;color:#888;margin-top:4px">${c.hora||''} | ⏱ ${relojHTML(c)} | ${c.emisor||''} | ${c.canal||''}</div>`;
     d.onclick=()=>{mesaSel=key;abrirMesa(key);};p.appendChild(d);
   });
 
@@ -473,7 +503,7 @@ function renderPlano(){
     const items=Array.isArray(v.items)?v.items:Object.values(v.items||{});
     const tipo=getTipo(items),color=tipo==='PARRILLA'?'#ff9900':tipo==='MIXTA'?'#f1c40f':'#3498db';
     const lista=items.map(i=>`${getCant(i)}x ${getNombre(i)} [P:${getEstadoSector(i,'PARRILLA')} / PLATO:${estadoPlatoCalculado(i)}]`).join('<br>');
-    return `<div class="fifo-item" style="border-left-color:${color}" onclick="mesaSel='${k}';abrirMesa('${k}')"><b>#${(v.id||0).toString().slice(-4)} ${v.mesa} - <span style="color:${color}">${tipo}</span></b><div style="font-size:10px;font-weight:800;color:${color}">${lista}</div><div style="color:#2ecc71;font-weight:900">$${(v.total_cobrado||v.total||0).toLocaleString()}</div></div>`;
+    return `<div class="fifo-item" style="border-left-color:${color}" onclick="mesaSel='${k}';abrirMesa('${k}')"><b>#${(v.id||0).toString().slice(-4)} ${v.mesa} - <span style="color:${color}">${tipo}</span></b><div style="font-size:10px;font-weight:800;color:${color}">${lista}</div><div style="color:#2ecc71;font-weight:900">$${(v.total_cobrado||v.total||0).toLocaleString()}</div><div>⏱ ${relojHTML(v)}</div></div>`;
   }).join('');
 }
 
@@ -492,7 +522,7 @@ function abrirMesa(key){
   const items=Array.isArray(cmd.items)?cmd.items:Object.values(cmd.items||{});
   const ep=(cmd.estado_parrilla||cmd.estado||'RECIBIDO').toUpperCase();
   document.getElementById('mEstadoParr').innerHTML=`<b style="color:#ff9900">${ep}</b> - ${getTipo(items)}`;
-  document.getElementById('mInfo').innerHTML=`MESA: <b>${cmd.mesa}</b> | Base: ${cmd.mesaBase||cmd.canal||''}<br>TIPO: <b>${getTipo(items)}</b> | Total: $${(cmd.total_cobrado||cmd.total||0).toLocaleString()} | ${new Date(cmd.timestamp||Date.now()).toLocaleTimeString()} | ${cmd.emisor||''}<br><span style="color:#aaa">Toda la comanda es visible. Lo de Cocina aparece tachado.</span>`;
+  document.getElementById('mInfo').innerHTML=`MESA: <b>${cmd.mesa}</b> | Base: ${cmd.mesaBase||cmd.canal||''}<br>TIPO: <b>${getTipo(items)}</b> | Total: $${(cmd.total_cobrado||cmd.total||0).toLocaleString()} | ${new Date(cmd.timestamp||Date.now()).toLocaleTimeString()} | ${cmd.emisor||''}<br>⏱ Tiempo transcurrido: ${relojHTML(cmd)}<br><span style="color:#aaa">Toda la comanda es visible. Lo de Cocina aparece tachado.</span>`;
   document.getElementById('mItems').innerHTML=items.map((it,idx)=>htmlItemParrilla(it,idx,true)).join('')||'Sin items';
   document.getElementById('modalMesa').style.display='flex';
 }
