@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LA PERSEVERANCIA - DUEÑO v3.2 MENÚ MAESTRO</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;font-family:Segoe UI,sans-serif}
+body{background:#0e0e0e;color:#fff;text-align:center;padding:20px}
+h1{color:#f1c40f;font-size:20px;letter-spacing:1px}
+.sub{font-size:11px;color:#999;margin:6px 0 18px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;max-width:1050px;margin:0 auto}
+.card{background:#161616;border:2px solid #333;border-radius:14px;padding:18px;cursor:pointer;position:relative;color:inherit;text-decoration:none;display:block;min-height:130px}
+.card:hover,.card:focus-visible{background:#222;outline:2px solid #fff4;outline-offset:2px}
+.card.gustavo{border-color:#c0392b}.card.hernan{border-color:#27ae60}.card.mariana{border-color:#3498db}.card.caja{border-color:#f1c40f;display:none}.card.reportes{border-color:#9b59b6}.card.menuadmin{border-color:#16a085}.card.dueno93{border-color:#ff9900;background:linear-gradient(180deg,#1c1400,#161616)}
+.btn-sup{position:absolute;top:8px;right:8px;font-size:9px;padding:4px 7px;border-radius:4px;border:1px solid #555;background:#000;color:#aaa;cursor:pointer;z-index:2;text-decoration:none}
+.btn-sup.caja{border-color:#f1c40f;color:#f1c40f}.btn-sup.prop{border-color:#3498db;color:#3498db}.btn-sup.inv{border-color:#ff9900;color:#ff9900}
+.icon{font-size:30px;margin-bottom:6px}.card b{font-size:13px;display:block;margin-bottom:4px}.card small{font-size:10px;color:#999;line-height:1.4}
+.badge-new{position:absolute;top:-8px;left:12px;background:#ff9900;color:#000;font-size:8px;font-weight:900;padding:2px 8px;border-radius:10px}
+</style>
+</head>
+<body>
+<h1>🔥 LA PERSEVERANCIA - SISTEMA DUEÑO v3.2</h1>
+<p class="sub">Gustavo cobra • Hernán carga egresos • Mariana libera • Plantilla 93 items • Reportes | Av. Argentina 5801</p>
+<div class="grid">
+  <div class="card gustavo" onclick="location.href='parrilla_gustavo.html'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='parrilla_gustavo.html'">
+    <button class="btn-sup caja" onclick="event.stopPropagation();location.href='parrilla_gustavo.html?sup=1'">SUP • CAJA</button>
+    <div class="icon">🔥</div><b>GUSTAVO PARRILLA</b><small>Cobra mesas<br>Parrilla y mixta</small>
+  </div>
+  <div class="card hernan" onclick="location.href='cocina_hernan.html'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='cocina_hernan.html'">
+    <button class="btn-sup caja" onclick="event.stopPropagation();location.href='cocina_hernan.html?caja=1'">CAJA + EGRESOS</button>
+    <div class="icon">🍳</div><b>HERNÁN COCINA - JEFE</b><small>Carga compras<br>Ve neto con egresos</small>
+  </div>
+  <div class="card mariana" onclick="location.href='mariana_mozo.html'" role="link" tabindex="0" onkeydown="if(event.key==='Enter')location.href='mariana_mozo.html'">
+    <button class="btn-sup prop" onclick="event.stopPropagation();location.href='mariana_mozo.html?propinas=1'">💸 PROPINAS</button>
+    <div class="icon">💁‍♀️</div><b>MARIANA MOZO</b><small>Libera mesas cobradas<br>Consulta propinas</small>
+  </div>
+  <a class="card dueno93" href="PARRILLA_DUENO_93_FINAL_DUEÑO.html">
+    <span class="badge-new">93 ITEMS REALES</span><span class="btn-sup inv">📦 VER INVENTARIO</span>
+    <div class="icon">📋</div><b>PLANTILLA DUEÑO 93</b><small style="color:#ffcc66">AV. ARGENTINA 5801<br>Costos editables + Stock + Margen<br><b>93 SKU del PDF real</b></small>
+  </a>
+  <a class="card reportes" href="reportes_pos_v1_1_RENDIMIENTO_ESTACIONES.html">
+    <div class="icon">📊</div><b>REPORTES GENERALES</b><small>Ventas • Caja • Productos • Historial<br>Rendimiento Cocina y Parrilla</small>
+  </a>
+  <a class="card menuadmin" href="administrador_menu_master_v4_4_CORRECCION_FINAL_93.html" aria-label="Abrir Administrador Menú Maestro versión 4.4">
+    <div class="icon">💲</div><b>ADMINISTRADOR MENÚ MAESTRO</b><small>Precios · Productos · Categorías<br>Generar carta PDF automáticamente</small>
+  </a>
+  <a class="card caja" id="cardCaja" href="caja_arqueo.html">
+    <div class="icon">💰</div><b>CAJA / ARQUEO (SOLO VOS)</b><small>Ingresos + Egresos + Neto</small>
+  </a>
+</div>
+<script>
+const p=new URLSearchParams(location.search);
+if(p.get('admin')==='sili'||p.get('sup')==='1'||localStorage.getItem('soy_dueno')==='1'){
+  document.getElementById('cardCaja').style.display='block';
+}
+if(p.get('admin')==='sili'){localStorage.setItem('soy_dueno','1');}
+</script>
+</body>
+</html>
